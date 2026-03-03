@@ -23,7 +23,7 @@ const TrainCombatScreen = () => {
         if (combatActive) return; // Cannot train dummy while fighting
         const gain = trainCombat();
         setLastGain(gain);
-        healPlayer(1); // Dummy combat heals slowly? Or maybe just safe. Let's add slight healing for "resting"
+        // healPlayer(1); // Dummy combat heals slowly? Or maybe just safe. Let's add slight healing for "resting"
     };
 
     const selectCreature = (creature) => {
@@ -164,6 +164,9 @@ const TrainCombatScreen = () => {
                         <View style={[styles.barFill, { width: `${Math.min(100, (currentStamina / playerStats.stamina) * 100)}%`, backgroundColor: '#e74c3c' }]} />
                         <Text style={styles.barText}>{currentStamina} / {playerStats.stamina}</Text>
                     </View>
+                    {(currentStamina <= playerStats.stamina * 0.10) && (
+                        <Text style={styles.lowHealthWarning}>⚠️ Dangerously low health! Go to the Town's Inn and rest to heal.</Text>
+                    )}
 
                     {/* XP Bar */}
                     <Text style={styles.statLabel}>Experience</Text>
@@ -204,9 +207,14 @@ const TrainCombatScreen = () => {
                                 </TouchableOpacity>
                             </View>
                         ) : (
-                            <TouchableOpacity style={[styles.button, styles.fightButton]} onPress={startCombat}>
-                                <Text style={styles.buttonText}>START FIGHT</Text>
-                            </TouchableOpacity>
+                            <View style={styles.postCombatControls}>
+                                <TouchableOpacity style={[styles.button, styles.fightButton]} onPress={startCombat}>
+                                    <Text style={styles.buttonText}>START FIGHT</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={[styles.button, styles.changeButton]} onPress={resetSelection}>
+                                    <Text style={styles.buttonText}>CHANGE MONSTER</Text>
+                                </TouchableOpacity>
+                            </View>
                         )}
                     </View>
                 ) : (
@@ -407,6 +415,14 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 5,
         fontWeight: 'bold',
+    },
+    lowHealthWarning: {
+        color: '#ff4d4d',
+        fontSize: 12,
+        textAlign: 'center',
+        marginTop: 5,
+        fontWeight: 'bold',
+        fontStyle: 'italic',
     },
 });
 

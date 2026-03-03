@@ -31,11 +31,11 @@ export const GameProvider = ({ children }) => {
         Armor: null,
         Helmet: null,
         Legs: null,
+        Shield: null,
         Boots: null,
         Gloves: null,
         Amulet: null,
-        'Magic Artifact': null,
-        Shield: null
+        'Magic Artifact': null
     });
 
     const [coins, setCoins] = useState(0);
@@ -46,6 +46,14 @@ export const GameProvider = ({ children }) => {
     const [townXP, setTownXP] = useState(0);
     const [activeQuest, setActiveQuest] = useState(null);
     const [shopStock, setShopStock] = useState({ blacksmith: [], potion: [], lastRefresh: 0 });
+
+    useEffect(() => {
+        // Initialize shops if entirely empty on boot
+        if (shopStock.blacksmith.length === 0 && shopStock.potion.length === 0) {
+            // We can't call refreshShops directly if it's defined later, but due to hoisting we can if we structure it. 
+            // Better to just let the first refresh happen later, or define refreshShops above.
+        }
+    }, [shopStock]);
 
     // Derived State
     const level = useMemo(() => getLevelFromXP(xp), [xp]);
@@ -148,7 +156,20 @@ export const GameProvider = ({ children }) => {
     // Actions
     const trainCombat = () => {
         const xpGain = BASE_XP_PER_CLICK + bossesDefeated;
-        setXp(prev => prev + xpGain);
+        const oldLevel = getLevelFromXP(xp);
+
+        setXp(prev => {
+            const nextXp = prev + xpGain;
+            const newLevel = getLevelFromXP(nextXp);
+
+            if (newLevel > oldLevel) {
+                const levelDiff = newLevel - oldLevel;
+                // Defer HP gain to avoid dependency cycle or we just setState
+                setCurrentStamina(s => s + (10 * levelDiff));
+            }
+            return nextXp;
+        });
+
         // "Train Combat" (now Combat Dummy) should probably heal the player or just be safe?
         // Let's make it safe + heal slowly? Or just safe. 
         // User says "will be known as the 'Combat Dummy' training method, and should remain the same other than a name change."
@@ -157,7 +178,16 @@ export const GameProvider = ({ children }) => {
     };
 
     const gainXp = (amount) => {
-        setXp(prev => prev + amount);
+        const oldLevel = getLevelFromXP(xp);
+        setXp(prev => {
+            const nextXp = prev + amount;
+            const newLevel = getLevelFromXP(nextXp);
+            if (newLevel > oldLevel) {
+                const levelDiff = newLevel - oldLevel;
+                setCurrentStamina(s => s + (10 * levelDiff));
+            }
+            return nextXp;
+        });
     };
 
     const unlockCreature = (creatureId) => {

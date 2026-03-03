@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,26 +16,42 @@ const TownScreen = () => {
     const [resting, setResting] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
 
-    // Refresh shops on mount if needed
-    useEffect(() => {
-        refreshShops();
-    }, []);
-
     // Timer for refreshing shop button? 
     // The user said "60 second cooldown for the refresh button".
     // We can just check `shopStock.lastRefresh`.
 
     const handleRefreshShop = () => {
-        const success = refreshShops(true); // Attempt force refresh? No, check cooldown in context.
-        // Actually context `refreshShops` checks cooldown unless force=true.
-        // But the user wants a button to REFRESH it. 
-        // "stock will only have a certain number... refresh by clicking a 'Refresh' button... 60s cooldown"
-        // So we call refreshShops(). If it returns false, it's on cooldown.
+        const success = refreshShops(true);
         if (refreshShops()) {
             Alert.alert("Shop Refreshed", "New stock has arrived!");
         } else {
             const remaining = 60 - Math.floor((Date.now() - shopStock.lastRefresh) / 1000);
             Alert.alert("Cooldown", `Wait ${remaining}s to refresh.`);
+        }
+    };
+
+    const handleSellItem = (item) => {
+        const sellValue = item.name.includes('Lucky') ? Math.floor(item.value * 1.5) : item.value;
+        const msg = `Sell ${item.name} for ${sellValue}c?`;
+        if (Platform.OS === 'web') {
+            if (window.confirm(msg)) sellItemToShop(item);
+        } else {
+            Alert.alert("Sell Item", msg, [
+                { text: "Cancel", style: "cancel" },
+                { text: "Sell", onPress: () => sellItemToShop(item) }
+            ]);
+        }
+    };
+
+    const handleDonateItem = (item) => {
+        const msg = `Donate ${item.name}?`;
+        if (Platform.OS === 'web') {
+            if (window.confirm(msg)) donateItem(item);
+        } else {
+            Alert.alert("Donate", msg, [
+                { text: "Cancel", style: "cancel" },
+                { text: "Donate", onPress: () => donateItem(item) }
+            ]);
         }
     };
 
@@ -144,15 +160,10 @@ const TownScreen = () => {
                 <View style={styles.divider} />
                 <Text style={styles.sectionHeader}>Sell from Inventory</Text>
                 <FlatList
-                    data={inventory}
+                    data={type === 'Blacksmith' ? inventory.filter(i => i.type !== 'Potion') : inventory.filter(i => i.type === 'Potion')}
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.itemRow} onPress={() => {
-                            Alert.alert("Sell Item", `Sell ${item.name} for ${item.name.includes('Lucky') ? Math.floor(item.value * 1.5) : item.value}?`, [
-                                { text: "Cancel" },
-                                { text: "Sell", onPress: () => sellItemToShop(item) }
-                            ]);
-                        }}>
+                        <TouchableOpacity style={styles.itemRow} onPress={() => handleSellItem(item)}>
                             <View style={styles.itemInfo}>
                                 <Text style={styles.itemName}>{item.name}</Text>
                             </View>
@@ -237,15 +248,10 @@ const TownScreen = () => {
                 <Text style={styles.descriptionText}>Donate items to improve the town.</Text>
                 <FlatList
                     horizontal
-                    data={inventory}
+                    data={inventory.filter(i => i.type !== 'Potion')}
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.donateItem} onPress={() => {
-                            Alert.alert("Donate", `Donate ${item.name}?`, [
-                                { text: "Cancel" },
-                                { text: "Donate", onPress: () => donateItem(item) }
-                            ]);
-                        }}>
+                        <TouchableOpacity style={styles.donateItem} onPress={() => handleDonateItem(item)}>
                             <Text style={styles.smallItemText}>{item.name}</Text>
                         </TouchableOpacity>
                     )}

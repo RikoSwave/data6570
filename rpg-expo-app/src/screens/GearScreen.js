@@ -7,7 +7,7 @@ import { GEAR_TYPES } from '../utils/gameLogic';
 import SaveLoadControls from '../components/SaveLoadControls';
 
 const GearScreen = () => {
-    const { equipped, inventory, equipGear, unequipGear, playerStats, coins, sellItem, consumePotion } = useGame();
+    const { equipped, inventory, equipGear, unequipGear, playerStats, coins, consumePotion } = useGame();
 
     const renderEquippedSlot = (slot) => {
         const item = equipped[slot];
@@ -65,9 +65,6 @@ const GearScreen = () => {
                         {item.effectType} +{Math.round((item.multiplier - 1) * 100)}%
                     </Text>
                 )}
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.sellButton} onPress={() => sellItem(item)}>
-                <Text style={styles.sellButtonText}>Sell ({item.value})</Text>
             </TouchableOpacity>
         </View>
     );
@@ -205,18 +202,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-    },
-    sellButton: {
-        backgroundColor: '#554400',
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: 10,
-        borderRadius: 8,
-    },
-    sellButtonText: {
-        color: '#FFD700',
-        fontSize: 12,
-        fontWeight: 'bold',
     },
     itemInfo: {
         flex: 1,
