@@ -107,6 +107,7 @@ const ExploreDungeonScreen = () => {
             {renderDungeonSelector()}
 
             <View style={styles.mainContent}>
+                <Text style={styles.dungeonDescription}>{selectedDungeon.description}</Text>
                 {isExploring ? (
                     <View style={styles.progressContainer}>
                         <Text style={styles.exploringText}>EXPLORING {selectedDungeon.name}...</Text>
@@ -229,6 +230,14 @@ const styles = StyleSheet.create({
     mainContent: {
         flex: 1,
         justifyContent: 'flex-start',
+    },
+    dungeonDescription: {
+        color: '#dfd',
+        fontSize: 14,
+        fontStyle: 'italic',
+        textAlign: 'center',
+        marginVertical: 10,
+        paddingHorizontal: 20,
     },
     progressContainer: {
         alignItems: 'center',

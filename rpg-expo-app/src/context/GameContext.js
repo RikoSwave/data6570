@@ -45,7 +45,7 @@ export const GameProvider = ({ children }) => {
     const [townLevel, setTownLevel] = useState(1);
     const [townXP, setTownXP] = useState(0);
     const [activeQuest, setActiveQuest] = useState(null);
-    const [shopStock, setShopStock] = useState({ blacksmith: [], potion: [], lastRefresh: 0 });
+    const [shopStock, setShopStock] = useState({ blacksmith: [], potion: [], lastRefreshBlacksmith: 0, lastRefreshPotion: 0 });
 
     useEffect(() => {
         // Initialize shops if entirely empty on boot
@@ -142,7 +142,7 @@ export const GameProvider = ({ children }) => {
                 setTownLevel(gameState.townLevel || 1);
                 setTownXP(gameState.townXP || 0);
                 setActiveQuest(gameState.activeQuest || null);
-                setShopStock(gameState.shopStock || { blacksmith: [], potion: [], lastRefresh: 0 });
+                setShopStock(gameState.shopStock || { blacksmith: [], potion: [], lastRefreshBlacksmith: 0, lastRefreshPotion: 0 });
                 // Clears potions on load (intended)
                 return true;
             }
@@ -205,20 +205,34 @@ export const GameProvider = ({ children }) => {
         setCurrentStamina(prev => Math.max(0, prev - amount));
     };
 
-    // Town Actions
-    const refreshShops = (force = false) => {
+    const refreshShops = (shopType = null, force = false) => {
         const now = Date.now();
-        if (!force && now - shopStock.lastRefresh < 60000) return false; // Cooldown
 
-        const blacksmithItems = generateShopItems(townLevel, 'Blacksmith');
-        const potionItems = generateShopItems(townLevel, 'Potion');
+        let didRefresh = false;
 
-        setShopStock({
-            blacksmith: blacksmithItems,
-            potion: potionItems,
-            lastRefresh: now
+        setShopStock(prev => {
+            let nextStock = { ...prev };
+
+            if (!shopType || shopType === 'Blacksmith') {
+                if (force || now - prev.lastRefreshBlacksmith >= 60000) {
+                    nextStock.blacksmith = generateShopItems(townLevel, 'Blacksmith');
+                    nextStock.lastRefreshBlacksmith = now;
+                    didRefresh = true;
+                }
+            }
+
+            if (!shopType || shopType === 'Potion') {
+                if (force || now - prev.lastRefreshPotion >= 60000) {
+                    nextStock.potion = generateShopItems(townLevel, 'Potion');
+                    nextStock.lastRefreshPotion = now;
+                    didRefresh = true;
+                }
+            }
+
+            return nextStock;
         });
-        return true;
+
+        return didRefresh;
     };
 
     const buyItem = (item) => {
@@ -295,7 +309,12 @@ export const GameProvider = ({ children }) => {
     };
 
     const donateItem = (item) => {
-        const xpValue = Math.max(1, Math.floor(item.value / 5));
+        let sellValue = item.value || 0;
+        if (item.name.includes('Lucky')) {
+            sellValue = Math.floor(sellValue * 1.5);
+        }
+        const xpValue = Math.ceil(sellValue * 1.1);
+
         setInventory(prev => prev.filter(i => i.id !== item.id));
         setTownXP(prev => {
             const newXP = prev + xpValue;

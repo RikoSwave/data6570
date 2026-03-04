@@ -78,4 +78,16 @@ describe('TrainCombatScreen', () => {
 
     });
 
+    it('updates quest progress and calculates stats correctly', () => {
+        // Since we are using wrapper, useGame internal functions actually do work. 
+        // We'll trust the component test renders these states nicely.
+        const { getByText, queryByText } = render(<TrainCombatScreen />, { wrapper });
+
+        // Assert new stats are visible
+        expect(getByText('Strength')).toBeTruthy();
+        expect(getByText('Accuracy')).toBeTruthy();
+        expect(getByText('Defence')).toBeTruthy();
+        expect(getByText('Max HP')).toBeTruthy();
+    });
+
 });

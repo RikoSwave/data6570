@@ -31,6 +31,7 @@ describe('ExploreDungeonScreen', () => {
 
         expect(getByText('DUNGEON')).toBeTruthy();
         expect(getByText('SELECT DUNGEON:')).toBeTruthy();
+        expect(getByText('Find equipment and weapons to boost your stats.')).toBeTruthy();
         expect(queryByText(/Ready to explore/i)).toBeTruthy();
         expect(getByText('EXPLORE (15s)')).toBeTruthy();
     });

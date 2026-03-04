@@ -268,10 +268,10 @@ export const POTION_TYPES = ['Accuracy', 'Strength', 'Defence'];
 export const POTION_TIERS = ['Basic', 'Good', 'Rare', 'Legendary'];
 
 export const DUNGEON_TYPES = {
-    GEAR: { name: 'Gear Dungeon', cost: 0, time: 15, type: 'gear' },
-    BASIC_POTION: { name: 'Basic Potion Dungeon', cost: 10, time: 30, type: 'potion', tier: 'Basic' },
-    GOOD_POTION: { name: 'Good Potion Dungeon', cost: 50, time: 30, type: 'potion', tier: 'Good' },
-    RARE_POTION: { name: 'Rare Potion Dungeon', cost: 200, time: 30, type: 'potion', tier: 'Rare' },
+    GEAR: { name: 'Gear Dungeon', cost: 0, time: 15, type: 'gear', description: 'Find equipment and weapons to boost your stats.' },
+    BASIC_POTION: { name: 'Basic Potion Dungeon', cost: 10, time: 30, type: 'potion', tier: 'Basic', description: 'Acquire basic potions for temporary buffs.' },
+    GOOD_POTION: { name: 'Good Potion Dungeon', cost: 50, time: 30, type: 'potion', tier: 'Good', description: 'Find stronger potions with better effects.' },
+    RARE_POTION: { name: 'Rare Potion Dungeon', cost: 200, time: 30, type: 'potion', tier: 'Rare', description: 'Hunt for the most powerful potions in the land.' },
 };
 
 export const generatePotion = (dungeonType) => {
@@ -365,4 +365,24 @@ export const generateShopItems = (townLevel, shopType) => {
         }
     }
     return items;
+};
+
+export const getTownLevelBonuses = (level) => {
+    const bonuses = [];
+    if (level === 2) {
+        bonuses.push('Unlocks Inn (+10 HP)');
+        bonuses.push('Expands Shop Stock');
+    } else if (level === 3) {
+        bonuses.push('Unlocks Good Potions');
+        bonuses.push('Better Gear in Shop');
+    } else if (level === 5) {
+        bonuses.push('Unlocks Rare Potions');
+        bonuses.push('Max Shop Items Expanded');
+    } else if (level > 2) {
+        bonuses.push('Better Gear in Shop');
+        bonuses.push('Expands Shop Stock');
+    } else {
+        bonuses.push('More items added to Town Shops');
+    }
+    return bonuses;
 };

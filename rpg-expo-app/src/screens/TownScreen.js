@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Ionicons } from '@expo/vector-icons';
+import { getTownLevelBonuses } from '../utils/gameLogic';
 
 const TownScreen = () => {
     const {
@@ -15,17 +16,26 @@ const TownScreen = () => {
     const [view, setView] = useState('HUB'); // HUB, BLACKSMITH, POTION, INN, SQUARE
     const [resting, setResting] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
+    const [showTooltip, setShowTooltip] = useState(false);
+
+    // Refresh shops on mount if needed
+    useEffect(() => {
+        refreshShops();
+    }, []);
 
     // Timer for refreshing shop button? 
     // The user said "60 second cooldown for the refresh button".
     // We can just check `shopStock.lastRefresh`.
 
-    const handleRefreshShop = () => {
-        const success = refreshShops(true);
-        if (refreshShops()) {
+    const handleRefreshShop = (type) => {
+        // Find which timer we look at for the alert
+        const lastRefresh = type === 'Blacksmith' ? shopStock.lastRefreshBlacksmith : shopStock.lastRefreshPotion;
+
+        const success = refreshShops(type, true);
+        if (refreshShops(type)) {
             Alert.alert("Shop Refreshed", "New stock has arrived!");
         } else {
-            const remaining = 60 - Math.floor((Date.now() - shopStock.lastRefresh) / 1000);
+            const remaining = 60 - Math.floor((Date.now() - lastRefresh) / 1000);
             Alert.alert("Cooldown", `Wait ${remaining}s to refresh.`);
         }
     };
@@ -82,8 +92,22 @@ const TownScreen = () => {
 
     const renderHub = () => (
         <View style={styles.hubContainer}>
-            <Text style={styles.townTitle}>Town Level {townLevel}</Text>
-            <Text style={styles.subTitle}>XP: {townXP}</Text>
+            <View style={styles.titleRow}>
+                <Text style={styles.townTitle}>Town Level {townLevel}</Text>
+                <TouchableOpacity onPress={() => setShowTooltip(!showTooltip)} style={styles.infoIcon}>
+                    <Ionicons name="information-circle-outline" size={32} color="#FFD700" />
+                </TouchableOpacity>
+            </View>
+            <Text style={styles.subTitle}>XP: {townXP} / {calculateTownXPForLevel(townLevel + 1)}</Text>
+
+            {showTooltip && (
+                <View style={styles.tooltipCard}>
+                    <Text style={styles.tooltipHeader}>Next Level Bonuses:</Text>
+                    {getTownLevelBonuses(townLevel + 1).map((bonus, idx) => (
+                        <Text key={idx} style={styles.tooltipText}>• {bonus}</Text>
+                    ))}
+                </View>
+            )}
 
             <TouchableOpacity style={styles.hubButton} onPress={() => setView('BLACKSMITH')}>
                 <Ionicons name="hammer" size={32} color="#e74c3c" />
@@ -123,7 +147,7 @@ const TownScreen = () => {
 
                 <View style={styles.shopControls}>
                     <Text style={styles.coinText}>Coins: {coins}</Text>
-                    <TouchableOpacity style={styles.refreshButton} onPress={handleRefreshShop}>
+                    <TouchableOpacity style={styles.refreshButton} onPress={() => handleRefreshShop(type)}>
                         <Text style={styles.buttonText}>Refresh Stock</Text>
                     </TouchableOpacity>
                 </View>
@@ -221,9 +245,9 @@ const TownScreen = () => {
                         <Text style={styles.questName}>{activeQuest.name}</Text>
                         <Text style={styles.questDesc}>{activeQuest.description}</Text>
                         <View style={styles.progressContainer}>
-                            <View style={[styles.progressBar, { width: `${(activeQuest.progress / activeQuest.count) * 100}%` }]} />
+                            <View style={[styles.progressBar, { width: `${(Math.min(activeQuest.progress, activeQuest.count) / activeQuest.count) * 100}%` }]} />
                         </View>
-                        <Text style={styles.progressText}>{activeQuest.progress} / {activeQuest.count}</Text>
+                        <Text style={styles.progressText}>{Math.min(activeQuest.progress, activeQuest.count)} / {activeQuest.count}</Text>
 
                         {activeQuest.isCompleted ? (
                             <TouchableOpacity style={styles.claimButton} onPress={() => {
@@ -250,11 +274,20 @@ const TownScreen = () => {
                     horizontal
                     data={inventory.filter(i => i.type !== 'Potion')}
                     keyExtractor={item => item.id}
-                    renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.donateItem} onPress={() => handleDonateItem(item)}>
-                            <Text style={styles.smallItemText}>{item.name}</Text>
-                        </TouchableOpacity>
-                    )}
+                    renderItem={({ item }) => {
+                        let sellValue = item.value || 0;
+                        if (item.name.includes('Lucky')) {
+                            sellValue = Math.floor(sellValue * 1.5);
+                        }
+                        const itemXp = Math.ceil(sellValue * 1.1);
+
+                        return (
+                            <TouchableOpacity style={styles.donateItem} onPress={() => handleDonateItem(item)}>
+                                <Text style={styles.smallItemText} numberOfLines={2}>{item.name}</Text>
+                                <Text style={styles.xpValueText}>+{itemXp} XP</Text>
+                            </TouchableOpacity>
+                        );
+                    }}
                 />
             </View>
         </View>
@@ -292,6 +325,35 @@ const styles = StyleSheet.create({
         fontSize: 18,
         color: '#aaa',
         marginBottom: 40,
+    },
+    titleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 5,
+    },
+    infoIcon: {
+        marginLeft: 10,
+        marginBottom: 5,
+    },
+    tooltipCard: {
+        backgroundColor: '#2c3e50',
+        padding: 15,
+        borderRadius: 10,
+        marginBottom: 20,
+        width: '80%',
+        borderWidth: 1,
+        borderColor: '#f39c12',
+    },
+    tooltipHeader: {
+        color: '#f39c12',
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginBottom: 10,
+    },
+    tooltipText: {
+        color: '#fff',
+        fontSize: 14,
+        marginBottom: 5,
     },
     hubButton: {
         width: '80%',
@@ -508,14 +570,20 @@ const styles = StyleSheet.create({
         borderRadius: 5,
         marginRight: 10,
         width: 100,
-        height: 60,
+        height: 70,
         justifyContent: 'center',
         alignItems: 'center',
     },
     smallItemText: {
         color: '#fff',
-        fontSize: 12,
+        fontSize: 11,
         textAlign: 'center',
+        marginBottom: 5,
+    },
+    xpValueText: {
+        color: '#2ecc71',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
 });
 

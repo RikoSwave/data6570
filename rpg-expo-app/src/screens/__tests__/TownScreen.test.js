@@ -45,7 +45,7 @@ const mockContextValue = {
     ],
     coins: 100,
     playerStats: { stamina: 20 },
-    calculateTownXPForLevel: jest.fn(),
+    calculateTownXPForLevel: jest.fn(() => 100),
     xp: 0,
     equipped: {}
 };

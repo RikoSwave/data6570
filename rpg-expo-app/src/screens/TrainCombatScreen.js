@@ -9,6 +9,53 @@ const TrainCombatScreen = () => {
     const { xp, level, trainCombat, xpToNextLevel, levelProgress, playerStats, currentStamina, healPlayer, takeDamage, gainXp, unlockCreature, unlockedCreatures, updateQuestProgress } = useGame();
     const [lastGain, setLastGain] = useState(0);
 
+    // Stat tracking for level up differences
+    const [levelUpDiff, setLevelUpDiff] = useState(null);
+    const prevStatsRef = useRef(playerStats);
+    const prevLevelRef = useRef(level);
+
+    useEffect(() => {
+        if (level > prevLevelRef.current) {
+            // Player leveled up, calculate diffs
+            const diff = {
+                accuracy: playerStats.accuracy - prevStatsRef.current.accuracy,
+                maxHit: playerStats.maxHit - prevStatsRef.current.maxHit,
+                defence: playerStats.defence - prevStatsRef.current.defence,
+                stamina: playerStats.stamina - prevStatsRef.current.stamina,
+            };
+            setLevelUpDiff(diff);
+
+            // Clear diff after 3 seconds
+            const timer = setTimeout(() => {
+                setLevelUpDiff(null);
+            }, 3000);
+
+            prevLevelRef.current = level;
+            prevStatsRef.current = playerStats;
+
+            return () => clearTimeout(timer);
+        } else {
+            // Just update refs if stats changed without level up (e.g. gear change or potions)
+            prevStatsRef.current = playerStats;
+        }
+    }, [level, playerStats]);
+
+    const renderStatValue = (label, currentVal, diffKey) => {
+        const diffVal = levelUpDiff ? levelUpDiff[diffKey] : 0;
+        return (
+            <View style={styles.statBox}>
+                <Text style={styles.statBoxLabel}>{label}</Text>
+                {diffVal > 0 ? (
+                    <Text style={styles.statBoxValue}>
+                        {currentVal - diffVal} <Text style={styles.diffText}>+{diffVal}</Text>
+                    </Text>
+                ) : (
+                    <Text style={styles.statBoxValue}>{currentVal}</Text>
+                )}
+            </View>
+        );
+    };
+
     // Active Combat State
     const [selectedCreature, setSelectedCreature] = useState(null);
     const [combatActive, setCombatActive] = useState(false);
@@ -140,6 +187,7 @@ const TrainCombatScreen = () => {
             const xpGainAmount = selectedCreature.xp;
             gainXp(xpGainAmount);
             unlockCreature(selectedCreature.id);
+            updateQuestProgress(selectedCreature.id); // Quest Progress
 
             stopCombat();
             setCombatFinished(true);
@@ -157,6 +205,14 @@ const TrainCombatScreen = () => {
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.statsContainer}>
                     <Text style={styles.levelText}>Level: {level}</Text>
+
+                    {/* Core Stats Overview */}
+                    <View style={styles.coreStatsRow}>
+                        {renderStatValue("Strength", playerStats.maxHit, "maxHit")}
+                        {renderStatValue("Accuracy", playerStats.accuracy, "accuracy")}
+                        {renderStatValue("Defence", playerStats.defence, "defence")}
+                        {renderStatValue("Max HP", playerStats.stamina, "stamina")}
+                    </View>
 
                     {/* Stamina Bar */}
                     <Text style={styles.statLabel}>Stamina (HP)</Text>
@@ -274,6 +330,31 @@ const styles = StyleSheet.create({
         color: '#FFD700',
         textAlign: 'center',
         marginBottom: 10,
+    },
+    coreStatsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 20,
+        backgroundColor: '#2c3e50',
+        padding: 10,
+        borderRadius: 8,
+    },
+    statBox: {
+        alignItems: 'center',
+        flex: 1,
+    },
+    statBoxLabel: {
+        color: '#aaa',
+        fontSize: 12,
+        marginBottom: 4,
+    },
+    statBoxValue: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    diffText: {
+        color: '#2ecc71',
     },
     statLabel: {
         color: '#ccc',
