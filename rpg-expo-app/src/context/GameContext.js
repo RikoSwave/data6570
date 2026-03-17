@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect, useMemo } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiCall } from '../utils/api';
 import {
     BASE_XP_PER_CLICK,
     calculateXPForLevel,
@@ -23,6 +24,8 @@ const SAVE_KEY = '@rpg_expo_save_v1';
 
 export const GameProvider = ({ children }) => {
     // Persistent State
+    const [authToken, setAuthToken] = useState(null);
+    const [characterName, setCharacterName] = useState(null);
     const [xp, setXp] = useState(0);
     const [bossesDefeated, setBossesDefeated] = useState(0);
     const [inventory, setInventory] = useState([]);
@@ -56,7 +59,7 @@ export const GameProvider = ({ children }) => {
     }, [shopStock]);
 
     // Derived State
-    const level = useMemo(() => getLevelFromXP(xp), [xp]);
+    const level = getLevelFromXP(xp);
 
     // Combat Level logic: "Higher combat level provides better accuracy..."
     // The user didn't specify a separate "Combat Level" formula vs "Level". 
@@ -102,55 +105,108 @@ export const GameProvider = ({ children }) => {
         }
     }, [playerStats.stamina]);
 
-    // Persistence
-    const saveGame = async () => {
-        try {
-            const gameState = {
-                xp,
-                bossesDefeated,
-                inventory,
-                equipped,
-                coins,
-                currentStamina,
-                unlockedCreatures,
-                townLevel,
-                townXP,
-                activeQuest,
-                shopStock,
-                timestamp: Date.now()
-            };
-            await AsyncStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
-            return true;
-        } catch (e) {
-            console.error('Failed to save game', e);
-            return false;
+    // Auth & API specific
+    const loginOrRegister = async (username, password, isLogin) => {
+        const endpoint = isLogin ? '/auth/login/' : '/auth/register/';
+        const res = await apiCall(endpoint, 'POST', { username, password });
+        if (res.status === 200 || res.status === 201) {
+            if (isLogin) {
+                const token = res.data.token;
+                await AsyncStorage.setItem('@auth_token', token);
+                setAuthToken(token);
+                await loadGame();
+            } else {
+                alert("Registered successfully. You can now log in.");
+            }
+        } else {
+            alert(JSON.stringify(res.data));
         }
     };
 
-    const loadGame = async () => {
-        try {
-            const jsonValue = await AsyncStorage.getItem(SAVE_KEY);
-            if (jsonValue != null) {
-                const gameState = JSON.parse(jsonValue);
-                setXp(gameState.xp || 0);
-                setBossesDefeated(gameState.bossesDefeated || 0);
-                setInventory(gameState.inventory || []);
-                setEquipped(gameState.equipped || {});
-                setCoins(gameState.coins || 0);
-                setCurrentStamina(gameState.currentStamina || 10);
-                setUnlockedCreatures(gameState.unlockedCreatures || []);
-                setTownLevel(gameState.townLevel || 1);
-                setTownXP(gameState.townXP || 0);
-                setActiveQuest(gameState.activeQuest || null);
-                setShopStock(gameState.shopStock || { blacksmith: [], potion: [], lastRefreshBlacksmith: 0, lastRefreshPotion: 0 });
-                // Clears potions on load (intended)
-                return true;
-            }
-            return false;
-        } catch (e) {
-            console.error('Failed to load game', e);
-            return false;
+    const createCharacter = async (name) => {
+        const res = await apiCall('/character/state/', 'POST', { name });
+        if (res.status === 201) {
+            setCharacterName(name);
+            await loadGame();
+        } else {
+            alert(JSON.stringify(res.data));
         }
+    };
+
+    const checkTokenOnLoad = async () => {
+        const token = await AsyncStorage.getItem('@auth_token');
+        if (token) {
+            setAuthToken(token);
+            await loadGame();
+        }
+    };
+
+    const logout = async () => {
+        await saveGame();
+        try {
+            await apiCall('/auth/logout/', 'POST');
+        } catch (e) {
+            console.error("Logout API failed", e);
+        }
+        await AsyncStorage.removeItem('@auth_token');
+        setAuthToken(null);
+        setCharacterName(null);
+    };
+
+    useEffect(() => { checkTokenOnLoad(); }, []);
+
+    const saveGame = async () => {
+        if (!authToken || !characterName) return false;
+        const payload = {
+            name: characterName, xp, bossesDefeated, inventory, equipped, coins, currentStamina,
+            unlockedCreatures, townLevel, townXP, activeQuest, shopStock
+        };
+        const res = await apiCall('/character/state/', 'POST', payload);
+        return res.status === 200 || res.status === 201;
+    };
+
+    // Auto-save debounced sync
+    useEffect(() => {
+        if (!authToken || !characterName) return;
+
+        const timeoutId = setTimeout(() => {
+            const payload = {
+                name: characterName, xp, bossesDefeated, inventory, equipped, coins, currentStamina,
+                unlockedCreatures, townLevel, townXP, activeQuest, shopStock
+            };
+            apiCall('/character/state/', 'POST', payload);
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+    }, [authToken, characterName, xp, bossesDefeated, inventory, equipped, coins, currentStamina, unlockedCreatures, townLevel, townXP, activeQuest, shopStock]);
+
+    // Force save on level up
+    useEffect(() => {
+        if (!authToken || !characterName || level <= 1) return;
+        saveGame();
+    }, [level]);
+
+    const loadGame = async () => {
+        const res = await apiCall('/character/state/', 'GET');
+        if (res.status === 200) {
+            const data = res.data;
+            setCharacterName(data.name);
+            setXp(data.xp || 0);
+            setBossesDefeated(data.bossesDefeated || 0);
+            setInventory(data.inventory || []);
+            setEquipped(data.equipped && Object.keys(data.equipped).length > 0 ? data.equipped : {
+                Weapon: null, Armor: null, Helmet: null, Legs: null, Shield: null, Boots: null, Gloves: null, Amulet: null, 'Magic Artifact': null
+            });
+            setCoins(data.coins || 0);
+            setCurrentStamina(data.currentStamina || 10);
+            setUnlockedCreatures(data.unlockedCreatures || []);
+            setTownLevel(data.townLevel || 1);
+            setTownXP(data.townXP || 0);
+            setActiveQuest(data.activeQuest || null);
+            setShopStock((data.shopStock && data.shopStock.blacksmith) ? data.shopStock : { blacksmith: [], potion: [], lastRefreshBlacksmith: 0, lastRefreshPotion: 0 });
+            return true;
+        }
+        return false;
     };
 
     // Actions
@@ -164,16 +220,27 @@ export const GameProvider = ({ children }) => {
 
             if (newLevel > oldLevel) {
                 const levelDiff = newLevel - oldLevel;
-                // Defer HP gain to avoid dependency cycle or we just setState
                 setCurrentStamina(s => s + (10 * levelDiff));
             }
             return nextXp;
         });
 
-        // "Train Combat" (now Combat Dummy) should probably heal the player or just be safe?
-        // Let's make it safe + heal slowly? Or just safe. 
-        // User says "will be known as the 'Combat Dummy' training method, and should remain the same other than a name change."
-        // So just XP.
+        apiCall('/combat/drop/?monster=Combat%20Dummy', 'GET').then(dropRes => {
+            if (dropRes.status === 200 && dropRes.data.drop) {
+                const drop = dropRes.data.drop;
+                const value = drop.name === 'Wood Splinter' ? 1 : 5;
+                setInventory(prev => {
+                    const existing = prev.find(i => i.name === drop.name);
+                    if (existing) {
+                        return prev.map(i => i.name === drop.name ? { ...i, quantity: (i.quantity || 1) + drop.quantity } : i);
+                    } else if (prev.length < 10) {
+                        return [...prev, { id: Date.now().toString(), name: drop.name, type: 'Resource', value: value, quantity: drop.quantity }];
+                    }
+                    return prev;
+                });
+            }
+        });
+
         return xpGain;
     };
 
@@ -257,7 +324,11 @@ export const GameProvider = ({ children }) => {
             value = Math.floor(value * 1.5); // Extra for Lucky
         }
         setCoins(prev => prev + value);
-        setInventory(prev => prev.filter(i => i.id !== item.id));
+        if (item.type === 'Resource' && item.quantity > 1) {
+            setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i));
+        } else {
+            setInventory(prev => prev.filter(i => i.id !== item.id));
+        }
     };
 
     const restAtInn = async () => {
@@ -315,7 +386,11 @@ export const GameProvider = ({ children }) => {
         }
         const xpValue = Math.ceil(sellValue * 1.1);
 
-        setInventory(prev => prev.filter(i => i.id !== item.id));
+        if (item.type === 'Resource' && item.quantity > 1) {
+            setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i));
+        } else {
+            setInventory(prev => prev.filter(i => i.id !== item.id));
+        }
         setTownXP(prev => {
             const newXP = prev + xpValue;
             const xpForNext = calculateTownXPForLevel(townLevel + 1);
@@ -332,6 +407,20 @@ export const GameProvider = ({ children }) => {
         const success = fightLogic(bossesDefeated);
         if (success) {
             setBossesDefeated(prev => prev + 1);
+            apiCall('/combat/drop/?monster=Boss', 'GET').then(dropRes => {
+                if (dropRes.status === 200 && dropRes.data.drop) {
+                    const drop = dropRes.data.drop;
+                    setInventory(prev => {
+                        const existing = prev.find(i => i.name === drop.name);
+                        if (existing) {
+                            return prev.map(i => i.name === drop.name ? { ...i, quantity: (i.quantity || 1) + drop.quantity } : i);
+                        } else if (prev.length < 10) {
+                            return [...prev, { id: Date.now().toString(), name: drop.name, type: 'Resource', value: 20, quantity: drop.quantity }];
+                        }
+                        return prev;
+                    });
+                }
+            });
         }
         // Consume potions
         if (activePotions.length > 0) {
@@ -379,7 +468,11 @@ export const GameProvider = ({ children }) => {
 
     const sellItem = (item) => {
         setCoins(prev => prev + (item.value || 0));
-        setInventory(prev => prev.filter(i => i.id !== item.id));
+        if (item.type === 'Resource' && item.quantity > 1) {
+            setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i));
+        } else {
+            setInventory(prev => prev.filter(i => i.id !== item.id));
+        }
     };
 
     const consumePotion = (potion) => {
@@ -433,6 +526,11 @@ export const GameProvider = ({ children }) => {
             nextLevelXP,
             saveGame,
             loadGame,
+            authToken,
+            characterName,
+            loginOrRegister,
+            createCharacter,
+            logout,
             // Town Exports
             townLevel,
             townXP,

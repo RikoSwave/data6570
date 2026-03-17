@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ProgressBarAndroid, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
-import SaveLoadControls from '../components/SaveLoadControls';
+
 
 
 
@@ -96,7 +96,7 @@ const ExploreDungeonScreen = () => {
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <SaveLoadControls />
+
                 <Text style={styles.title}>DUNGEON</Text>
                 <Text style={styles.subtitle}>Inventory: {inventory.length} items  |  Coins: {coins}</Text>
                 {gearStats.speedBonus > 0 && (

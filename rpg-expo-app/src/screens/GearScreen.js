@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { GEAR_TYPES } from '../utils/gameLogic';
-import SaveLoadControls from '../components/SaveLoadControls';
+
 
 const GearScreen = () => {
     const { equipped, inventory, equipGear, unequipGear, playerStats, coins, consumePotion } = useGame();
@@ -37,9 +37,8 @@ const GearScreen = () => {
     };
 
     const handleInventoryPress = (item) => {
-        if (item.type === 'Potion') {
-            // Potions cannot be equipped here, maybe just show details?
-            // Actually, let's allow selling logic to be separate.
+        if (item.type === 'Potion' || item.type === 'Resource') {
+            // Potions and Resources cannot be equipped here
             return;
         }
         equipGear(item);
@@ -49,10 +48,12 @@ const GearScreen = () => {
         <View style={styles.inventoryItemContainer}>
             <TouchableOpacity style={styles.inventoryItem} onPress={() => handleInventoryPress(item)}>
                 <View style={styles.itemInfo}>
-                    <Text style={styles.invItemName}>{item.name}</Text>
+                    <Text style={styles.invItemName}>
+                        {item.name} {item.quantity && item.quantity > 1 ? `(x${item.quantity})` : ''}
+                    </Text>
                     <Text style={styles.invItemType}>{item.type}</Text>
                 </View>
-                {item.type !== 'Potion' && (
+                {item.type !== 'Potion' && item.type !== 'Resource' && item.stats && (
                     <Text style={styles.invItemStats}>
                         {item.stats.accuracy ? `Acc: ${item.stats.accuracy} ` : ''}
                         {item.stats.maxHit ? `Str: ${item.stats.maxHit} ` : ''}
@@ -65,13 +66,18 @@ const GearScreen = () => {
                         {item.effectType} +{Math.round((item.multiplier - 1) * 100)}%
                     </Text>
                 )}
+                {item.type === 'Resource' && (
+                    <Text style={styles.invItemStats}>
+                        Value: {item.value}
+                    </Text>
+                )}
             </TouchableOpacity>
         </View>
     );
 
     return (
         <SafeAreaView style={styles.container}>
-            <SaveLoadControls />
+
             <View style={styles.statsPanel}>
                 <Text style={styles.panelTitle}>PLAYER STATS</Text>
                 <Text style={styles.coinText}>Coins: {coins}</Text>

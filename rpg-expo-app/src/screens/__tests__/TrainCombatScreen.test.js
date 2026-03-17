@@ -9,11 +9,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     getItem: jest.fn(),
 }));
 
-// We can mock the SaveLoadControls because it's rendering internally
-jest.mock('../../components/SaveLoadControls', () => {
-    const { Text } = require('react-native');
-    return () => <Text>SaveLoadControls Mock</Text>;
-});
+
 
 const wrapper = ({ children }) => <GameProvider>{children}</GameProvider>;
 

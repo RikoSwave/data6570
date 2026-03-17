@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
-import SaveLoadControls from '../components/SaveLoadControls';
+
 
 const ChallengeBossScreen = () => {
     const { bossesDefeated, runBossFight, playerStats, activePotions, inventory, consumePotion } = useGame();
@@ -45,7 +45,7 @@ const ChallengeBossScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <SaveLoadControls />
+
             <View style={styles.header}>
                 <Text style={styles.title}>BOSS LAIR</Text>
                 <Text style={styles.subtitle}>Bosses Defeated: {bossesDefeated}</Text>

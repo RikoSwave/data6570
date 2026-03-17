@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
-import SaveLoadControls from '../components/SaveLoadControls';
+
 import { CREATURES } from '../utils/gameLogic';
 
 const TrainCombatScreen = () => {
@@ -201,7 +201,7 @@ const TrainCombatScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-            <SaveLoadControls />
+
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 <View style={styles.statsContainer}>
                     <Text style={styles.levelText}>Level: {level}</Text>

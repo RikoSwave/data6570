@@ -8,10 +8,7 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     getItem: jest.fn(),
 }));
 
-jest.mock('../../components/SaveLoadControls', () => {
-    const { Text } = require('react-native');
-    return () => <Text>SaveLoadControls</Text>;
-});
+
 
 const wrapper = ({ children }) => <GameProvider>{children}</GameProvider>;
 

@@ -132,7 +132,7 @@ const TownScreen = () => {
     );
 
     const renderShop = (type) => { // 'Blacksmith' or 'Potion'
-        const stock = type === 'Blacksmith' ? shopStock.blacksmith : shopStock.potion;
+        const stock = type === 'Blacksmith' ? (shopStock?.blacksmith || []) : (shopStock?.potion || []);
         const shopName = type === 'Blacksmith' ? "Blacksmith" : "Potion Shop";
 
         return (
@@ -189,7 +189,9 @@ const TownScreen = () => {
                     renderItem={({ item }) => (
                         <TouchableOpacity style={styles.itemRow} onPress={() => handleSellItem(item)}>
                             <View style={styles.itemInfo}>
-                                <Text style={styles.itemName}>{item.name}</Text>
+                                <Text style={styles.itemName}>
+                                    {item.name} {item.quantity && item.quantity > 1 ? `(x${item.quantity})` : ''}
+                                </Text>
                             </View>
                             <Text style={styles.priceText}>
                                 {item.name.includes('Lucky') ? Math.floor(item.value * 1.5) : item.value}c
@@ -283,7 +285,9 @@ const TownScreen = () => {
 
                         return (
                             <TouchableOpacity style={styles.donateItem} onPress={() => handleDonateItem(item)}>
-                                <Text style={styles.smallItemText} numberOfLines={2}>{item.name}</Text>
+                                <Text style={styles.smallItemText} numberOfLines={2}>
+                                    {item.name} {item.quantity && item.quantity > 1 ? `(x${item.quantity})` : ''}
+                                </Text>
                                 <Text style={styles.xpValueText}>+{itemXp} XP</Text>
                             </TouchableOpacity>
                         );

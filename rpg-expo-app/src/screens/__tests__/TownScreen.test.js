@@ -20,10 +20,7 @@ jest.mock('@expo/vector-icons', () => {
     };
 });
 
-jest.mock('../../components/SaveLoadControls', () => {
-    const { Text } = require('react-native');
-    return () => <Text>SaveLoadControls</Text>;
-});
+
 
 const mockContextValue = {
     townLevel: 1,
