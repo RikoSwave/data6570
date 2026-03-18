@@ -6,8 +6,12 @@ import { useGame } from '../context/GameContext';
 import { CREATURES } from '../utils/gameLogic';
 
 const TrainCombatScreen = () => {
-    const { xp, level, trainCombat, xpToNextLevel, levelProgress, playerStats, currentStamina, healPlayer, takeDamage, gainXp, unlockCreature, unlockedCreatures, updateQuestProgress } = useGame();
+    const { xp, level, trainCombat, xpToNextLevel, levelProgress, playerStats, currentStamina, healPlayer, takeDamage, gainXp, lootMonsterDrop, unlockCreature, unlockedCreatures, updateQuestProgress, inventory, consumePotion, activePotions } = useGame();
     const [lastGain, setLastGain] = useState(0);
+
+    const availablePotions = useMemo(() => {
+        return inventory.filter(p => p.type === 'Potion');
+    }, [inventory]);
 
     // Stat tracking for level up differences
     const [levelUpDiff, setLevelUpDiff] = useState(null);
@@ -187,11 +191,20 @@ const TrainCombatScreen = () => {
             const xpGainAmount = selectedCreature.xp;
             gainXp(xpGainAmount);
             unlockCreature(selectedCreature.id);
-            updateQuestProgress(selectedCreature.id); // Quest Progress
+            const questCompleted = updateQuestProgress(selectedCreature.id);
+            if (questCompleted) {
+                Alert.alert("Quest Completed!", "You have fulfilled your quest. Visit the Town Square to claim your reward.");
+            }
 
             stopCombat();
             setCombatFinished(true);
             setCombatLog(prev => [`VICTORY! +${xpGainAmount} XP`, `Defeated ${selectedCreature.name}!`, ...prev].slice(0, 15));
+            
+            lootMonsterDrop(selectedCreature.name).then(drop => {
+                if (drop) {
+                    setCombatLog(prev => [`Received ${drop.quantity}x ${drop.name}`, ...prev].slice(0, 15));
+                }
+            });
             // Removed Alert to make it smoother as requested "keep combat log open... buttons"
         }
     }, [enemyHP, currentStamina, combatActive, selectedCreature, gainXp, unlockCreature]); // unlockCreature dep
@@ -203,7 +216,25 @@ const TrainCombatScreen = () => {
         <SafeAreaView style={styles.container}>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.statsContainer}>
+                {/* Add potions section */}
+            {availablePotions.length > 0 && (
+                <View style={styles.potionContainer}>
+                    <Text style={styles.sectionTitle}>Use Potion:</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.potionScroll}>
+                        {availablePotions.map(potion => (
+                            <TouchableOpacity 
+                                key={potion.id} 
+                                style={styles.potionButton}
+                                onPress={() => consumePotion(potion)}
+                            >
+                                <Text style={styles.potionText}>{potion.name}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
+
+            <View style={styles.creatureListContainer}>
                     <Text style={styles.levelText}>Level: {level}</Text>
 
                     {/* Core Stats Overview */}

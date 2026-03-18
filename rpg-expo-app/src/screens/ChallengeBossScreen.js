@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
+import { getBossStats } from '../utils/gameLogic';
 
 
 const ChallengeBossScreen = () => {
@@ -12,6 +13,7 @@ const ChallengeBossScreen = () => {
     const [result, setResult] = useState(null); // 'VICTORY' | 'DEFEAT'
     const [message, setMessage] = useState('');
     const [showPotions, setShowPotions] = useState(false);
+    const bossStats = getBossStats(bossesDefeated);
 
     useEffect(() => {
         let interval;
@@ -64,9 +66,10 @@ const ChallengeBossScreen = () => {
                 )}
 
                 <View style={styles.statsPreview}>
-                    <Text style={styles.statText}>Your Acc: {playerStats.accuracy}</Text>
-                    <Text style={styles.statText}>Your Str: {playerStats.maxHit}</Text>
-                    <Text style={styles.statText}>Your Def: {playerStats.defence}</Text>
+                    <Text style={styles.statText}>Boss HP: {bossStats.hp}</Text>
+                    <Text style={styles.statText}>Boss Acc: {bossStats.accuracy}</Text>
+                    <Text style={styles.statText}>Boss Str: {bossStats.maxHit}</Text>
+                    <Text style={styles.statText}>Boss Def: {bossStats.defence}</Text>
                 </View>
             </View>
 

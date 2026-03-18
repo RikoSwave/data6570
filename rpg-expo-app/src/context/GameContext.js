@@ -87,8 +87,10 @@ export const GameProvider = ({ children }) => {
     const playerStats = useMemo(() => {
         const stats = calculateCombatStats(combatLevel, gearStats);
 
-        // Apply Potion Buffs (Stacking)
+        const now = Date.now();
+        // Apply Potion Buffs (Stacking) filter out expired potions
         activePotions.forEach(potion => {
+            if (potion.expiresAt && potion.expiresAt < now) return; // Skip expired
             if (potion.effectType === 'Accuracy') stats.accuracy = Math.floor(stats.accuracy * potion.multiplier);
             if (potion.effectType === 'Strength') stats.maxHit = Math.floor(stats.maxHit * potion.multiplier);
             if (potion.effectType === 'Defence') stats.defence = Math.floor(stats.defence * potion.multiplier);
@@ -97,6 +99,15 @@ export const GameProvider = ({ children }) => {
 
         return stats;
     }, [combatLevel, gearStats, activePotions]);
+
+    // Cleanup expired potions
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const now = Date.now();
+            setActivePotions(prev => prev.filter(p => !p.expiresAt || p.expiresAt >= now));
+        }, 1000);
+        return () => clearInterval(interval);
+    }, []);
 
     // Ensure current stamina doesn't exceed max
     useEffect(() => {
@@ -225,21 +236,7 @@ export const GameProvider = ({ children }) => {
             return nextXp;
         });
 
-        apiCall('/combat/drop/?monster=Combat%20Dummy', 'GET').then(dropRes => {
-            if (dropRes.status === 200 && dropRes.data.drop) {
-                const drop = dropRes.data.drop;
-                const value = drop.name === 'Wood Splinter' ? 1 : 5;
-                setInventory(prev => {
-                    const existing = prev.find(i => i.name === drop.name);
-                    if (existing) {
-                        return prev.map(i => i.name === drop.name ? { ...i, quantity: (i.quantity || 1) + drop.quantity } : i);
-                    } else if (prev.length < 10) {
-                        return [...prev, { id: Date.now().toString(), name: drop.name, type: 'Resource', value: value, quantity: drop.quantity }];
-                    }
-                    return prev;
-                });
-            }
-        });
+        lootMonsterDrop('Combat Dummy');
 
         return xpGain;
     };
@@ -255,6 +252,29 @@ export const GameProvider = ({ children }) => {
             }
             return nextXp;
         });
+    };
+
+    const lootMonsterDrop = async (monsterName) => {
+        try {
+            const dropRes = await apiCall(`/combat/drop/?monster=${encodeURIComponent(monsterName)}`, 'GET');
+            if (dropRes.status === 200 && dropRes.data.drop) {
+                const drop = dropRes.data.drop;
+                const value = drop.name === 'Wood Splinter' ? 1 : Math.max(5, Math.floor(level * 2));
+                setInventory(prev => {
+                    const existing = prev.find(i => i.name === drop.name);
+                    if (existing) {
+                        return prev.map(i => i.name === drop.name ? { ...i, quantity: (i.quantity || 1) + drop.quantity } : i);
+                    } else if (prev.length < 10) {
+                        return [...prev, { id: Date.now().toString(), name: drop.name, type: 'Resource', value: value, quantity: drop.quantity }];
+                    }
+                    return prev;
+                });
+                return drop;
+            }
+        } catch (e) {
+            console.error("Loot error", e);
+        }
+        return null;
     };
 
     const unlockCreature = (creatureId) => {
@@ -318,14 +338,14 @@ export const GameProvider = ({ children }) => {
         return { success: true };
     };
 
-    const sellItemToShop = (item) => {
+    const sellItemToShop = (item, quantity = 1) => {
         let value = item.value || 0;
         if (item.name.includes('Lucky')) {
             value = Math.floor(value * 1.5); // Extra for Lucky
         }
-        setCoins(prev => prev + value);
-        if (item.type === 'Resource' && item.quantity > 1) {
-            setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i));
+        setCoins(prev => prev + (value * quantity));
+        if (item.type === 'Resource' && item.quantity > quantity) {
+            setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - quantity } : i));
         } else {
             setInventory(prev => prev.filter(i => i.id !== item.id));
         }
@@ -351,14 +371,20 @@ export const GameProvider = ({ children }) => {
     };
 
     const updateQuestProgress = (creatureId) => {
-        if (!activeQuest || activeQuest.isCompleted) return;
+        let justCompleted = false;
+        if (!activeQuest || activeQuest.isCompleted) return false;
         if (activeQuest.targetId === creatureId) {
-            setActiveQuest(prev => {
-                const newProgress = prev.progress + 1;
-                const isCompleted = newProgress >= prev.count;
-                return { ...prev, progress: newProgress, isCompleted };
-            });
+            const newProgress = activeQuest.progress + 1;
+            if (newProgress >= activeQuest.count) {
+                justCompleted = true;
+            }
+            setActiveQuest(prev => ({ 
+                ...prev, 
+                progress: Math.min(newProgress, prev.count), 
+                isCompleted: newProgress >= prev.count 
+            }));
         }
+        return justCompleted;
     };
 
     const claimQuestReward = () => {
@@ -379,15 +405,15 @@ export const GameProvider = ({ children }) => {
         setActiveQuest(null);
     };
 
-    const donateItem = (item) => {
+    const donateItem = (item, quantity = 1) => {
         let sellValue = item.value || 0;
         if (item.name.includes('Lucky')) {
             sellValue = Math.floor(sellValue * 1.5);
         }
-        const xpValue = Math.ceil(sellValue * 1.1);
+        const xpValue = Math.ceil(sellValue * 1.1) * quantity;
 
-        if (item.type === 'Resource' && item.quantity > 1) {
-            setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - 1 } : i));
+        if (item.type === 'Resource' && item.quantity > quantity) {
+            setInventory(prev => prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity - quantity } : i));
         } else {
             setInventory(prev => prev.filter(i => i.id !== item.id));
         }
@@ -429,18 +455,60 @@ export const GameProvider = ({ children }) => {
         return success;
     };
 
-    const exploreDungeon = (dungeonType = 'GEAR') => {
-        // Handle Logic based on dungeonType
-        if (dungeonType === 'GEAR') {
-            const newItem = generateRandomGear(combatLevel);
-            setInventory(prev => [...prev, newItem]);
-            return newItem;
+    const exploreDungeon = async (dungeonType) => {
+        // Implement risk check
+        const difficultyPenalties = {
+            'Basic': 10,
+            'Good': 30,
+            'Rare': 50,
+            'Legendary': 70,
+            'Basic Potions': 10,
+            'Good Potions': 30,
+            'Rare Potions': 50,
+            'Legendary Potions': 70
+        };
+        const penalty = difficultyPenalties[dungeonType] || 10;
+        
+        const successChance = Math.min(95, 50 + (level + townLevel * 2) - penalty);
+        const roll = Math.random() * 100;
+        const isSuccess = roll <= successChance;
+
+        if (!isSuccess) {
+            // Trap triggered
+            const trapDamage = Math.floor(playerStats.stamina * 0.2) + 5;
+            let died = false;
+            let finalStamina = currentStamina - trapDamage;
+            
+            if (finalStamina <= 0) {
+                finalStamina = 0;
+                died = true;
+                const penaltyCost = 25 + (bossesDefeated * 25);
+                setCoins(prev => Math.max(0, prev - penaltyCost));
+            }
+            
+            takeDamage(trapDamage);
+            return { success: false, reason: 'trap', damage: trapDamage, died };
+        }
+
+        // Generate Item
+        let item;
+        let isPotion = dungeonType.includes('Potion');
+        let tier = dungeonType.split(' ')[0];
+
+        if (isPotion) {
+            item = generatePotion(tier);
         } else {
-            // Potion Dungeon
-            // generatePotion is imported from utils
-            const newPotion = generatePotion(dungeonType);
-            setInventory(prev => [...prev, newPotion]);
-            return newPotion;
+            const playerLevelForGear = combatLevel;
+            item = generateRandomGear(playerLevelForGear);
+            item.name = `${tier} ${item.name}`; // Prefix with tier
+        }
+        
+        // Add to inventory if space
+        if (inventory.length < 10) {
+            setInventory(prev => [...prev, item]);
+            return { success: true, reward: item };
+        } else {
+            return { success: false, reason: 'inventory_full' };
         }
     };
 
@@ -476,7 +544,21 @@ export const GameProvider = ({ children }) => {
     };
 
     const consumePotion = (potion) => {
-        setActivePotions(prev => [...prev, potion]);
+        if (potion.effectType === 'Health') {
+            healPlayer(Math.floor(playerStats.stamina * potion.healPercent));
+            setInventory(prev => prev.filter(i => i.id !== potion.id));
+            return;
+        }
+
+        // Apply duration based on tier if consumed during general use
+        let durationMinutes = 1;
+        if (potion.name.includes('Good')) durationMinutes = 2;
+        if (potion.name.includes('Rare')) durationMinutes = 3;
+        if (potion.name.includes('Legendary')) durationMinutes = 4;
+
+        const expiringPotion = { ...potion, expiresAt: Date.now() + (durationMinutes * 60 * 1000) };
+
+        setActivePotions(prev => [...prev, expiringPotion]);
         setInventory(prev => prev.filter(i => i.id !== potion.id));
     };
 
@@ -518,6 +600,7 @@ export const GameProvider = ({ children }) => {
             healPlayer,
             takeDamage,
             gainXp,
+            lootMonsterDrop,
             unlockedCreatures,
             unlockCreature,
             xpToNextLevel: nextLevelXP - xp,

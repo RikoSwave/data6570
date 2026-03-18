@@ -30,9 +30,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">7.14% </span>
+                <span class="strong">4% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>2/28</span>
+                <span class='fraction'>2/50</span>
             </div>
         
             
@@ -291,7 +291,17 @@
 <a name='L226'></a><a href='#L226'>226</a>
 <a name='L227'></a><a href='#L227'>227</a>
 <a name='L228'></a><a href='#L228'>228</a>
-<a name='L229'></a><a href='#L229'>229</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L229'></a><a href='#L229'>229</a>
+<a name='L230'></a><a href='#L230'>230</a>
+<a name='L231'></a><a href='#L231'>231</a>
+<a name='L232'></a><a href='#L232'>232</a>
+<a name='L233'></a><a href='#L233'>233</a>
+<a name='L234'></a><a href='#L234'>234</a>
+<a name='L235'></a><a href='#L235'>235</a>
+<a name='L236'></a><a href='#L236'>236</a>
+<a name='L237'></a><a href='#L237'>237</a>
+<a name='L238'></a><a href='#L238'>238</a>
+<a name='L239'></a><a href='#L239'>239</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -329,18 +339,28 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -525,7 +545,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { GEAR_TYPES } from '../utils/gameLogic';
-import SaveLoadControls from '../components/SaveLoadControls';
+&nbsp;
 &nbsp;
 const GearScreen = () =&gt; {
     const { equipped, inventory, equipGear, unequipGear, playerStats, coins, consumePotion } = useGame();
@@ -543,12 +563,13 @@ const GearScreen = () =&gt; {
                 {item ? (
 <span class="branch-0 cbranch-no" title="branch not covered" >                    &lt;View&gt;</span>
                         &lt;Text style={styles.itemName}&gt;{item.name}&lt;/Text&gt;
-                        &lt;Text style={styles.itemStats}&gt;
-                            {item.stats.accuracy ? `Acc: +${item.stats.accuracy} ` : ''}
-                            {item.stats.maxHit ? `Str: +${item.stats.maxHit} ` : ''}
-                            {item.stats.defence ? `Def: +${item.stats.defence} ` : ''}
-                            {item.stats.speedBonus ? `Spd: +${item.stats.speedBonus}%` : ''}
-                        &lt;/Text&gt;
+                        {item?.stats?.maxHitPercent &amp;&amp; &lt;Text style={styles.itemStats}&gt;Str: +{item.stats.maxHitPercent}%&lt;/Text&gt;}
+                        {item?.stats?.accuracyPercent &amp;&amp; &lt;Text style={styles.itemStats}&gt;Acc: +{item.stats.accuracyPercent}%&lt;/Text&gt;}
+                        {item?.stats?.maxHit &gt; 0 &amp;&amp; &lt;Text style={styles.itemStats}&gt;Str: +{item.stats.maxHit}&lt;/Text&gt;}
+                        {item?.stats?.accuracy &gt; 0 &amp;&amp; &lt;Text style={styles.itemStats}&gt;Acc: +{item.stats.accuracy}&lt;/Text&gt;}
+                        {item?.stats?.defence &gt; 0 &amp;&amp; &lt;Text style={styles.itemStats}&gt;Def: +{item.stats.defence}&lt;/Text&gt;}
+                        {item?.stats?.stamina &gt; 0 &amp;&amp; &lt;Text style={styles.itemStats}&gt;HP: +{item.stats.stamina}&lt;/Text&gt;}
+                        {item?.stats?.speedBonus &gt; 0 &amp;&amp; &lt;Text style={styles.itemStats}&gt;Spd: +{item.stats.speedBonus}%&lt;/Text&gt;}
                     &lt;/View&gt;
                 ) : (
                     &lt;Text style={styles.emptyText}&gt;Empty&lt;/Text&gt;
@@ -558,9 +579,8 @@ const GearScreen = () =&gt; {
     };
 &nbsp;
     const handleInventoryPress = <span class="fstat-no" title="function not covered" >(i</span>tem) =&gt; {
-<span class="cstat-no" title="statement not covered" >        if (item.type === 'Potion') {</span>
-            // Potions cannot be equipped here, maybe just show details?
-            // Actually, let's allow selling logic to be separate.
+<span class="cstat-no" title="statement not covered" >        if (item.type === 'Potion' || item.type === 'Resource') {</span>
+            // Potions and Resources cannot be equipped here
 <span class="cstat-no" title="statement not covered" >            return;</span>
         }
 <span class="cstat-no" title="statement not covered" >        equipGear(item);</span>
@@ -570,20 +590,30 @@ const GearScreen = () =&gt; {
 <span class="cstat-no" title="statement not covered" >        &lt;View style={styles.inventoryItemContainer}&gt;</span>
             &lt;TouchableOpacity style={styles.inventoryItem} onPress={<span class="fstat-no" title="function not covered" >()</span> =&gt; <span class="cstat-no" title="statement not covered" >handleInventoryPress(item)}</span>&gt;
                 &lt;View style={styles.itemInfo}&gt;
-                    &lt;Text style={styles.invItemName}&gt;{item.name}&lt;/Text&gt;
+                    &lt;Text style={styles.invItemName}&gt;
+                        {item.name} {item.quantity &amp;&amp; item.quantity &gt; 1 ? `(x${item.quantity})` : ''}
+                    &lt;/Text&gt;
                     &lt;Text style={styles.invItemType}&gt;{item.type}&lt;/Text&gt;
                 &lt;/View&gt;
-                {item.type !== 'Potion' &amp;&amp; (
-                    &lt;Text style={styles.invItemStats}&gt;
-                        {item.stats.accuracy ? `Acc: ${item.stats.accuracy} ` : ''}
-                        {item.stats.maxHit ? `Str: ${item.stats.maxHit} ` : ''}
-                        {item.stats.defence ? `Def: ${item.stats.defence} ` : ''}
-                        {item.stats.speedBonus ? `Spd: ${item.stats.speedBonus}%` : ''}
-                    &lt;/Text&gt;
+                {item.type !== 'Potion' &amp;&amp; item.type !== 'Resource' &amp;&amp; item.stats &amp;&amp; (
+                    &lt;View&gt;
+                        {item.stats.maxHitPercent &amp;&amp; &lt;Text style={styles.invItemStats}&gt;Str: +{item.stats.maxHitPercent}%&lt;/Text&gt;}
+                        {item.stats.accuracyPercent &amp;&amp; &lt;Text style={styles.invItemStats}&gt;Acc: +{item.stats.accuracyPercent}%&lt;/Text&gt;}
+                        {item.stats.maxHit &gt; 0 &amp;&amp; &lt;Text style={styles.invItemStats}&gt;Str: +{item.stats.maxHit}&lt;/Text&gt;}
+                        {item.stats.accuracy &gt; 0 &amp;&amp; &lt;Text style={styles.invItemStats}&gt;Acc: +{item.stats.accuracy}&lt;/Text&gt;}
+                        {item.stats.defence &gt; 0 &amp;&amp; &lt;Text style={styles.invItemStats}&gt;Def: +{item.stats.defence}&lt;/Text&gt;}
+                        {item.stats.stamina &gt; 0 &amp;&amp; &lt;Text style={styles.invItemStats}&gt;HP: +{item.stats.stamina}&lt;/Text&gt;}
+                        {item.stats.speedBonus &gt; 0 &amp;&amp; &lt;Text style={styles.invItemStats}&gt;Spd: +{item.stats.speedBonus}%&lt;/Text&gt;}
+                    &lt;/View&gt;
                 )}
                 {item.type === 'Potion' &amp;&amp; (
                     &lt;Text style={styles.invItemStats}&gt;
                         {item.effectType} +{Math.round((item.multiplier - 1) * 100)}%
+                    &lt;/Text&gt;
+                )}
+                {item.type === 'Resource' &amp;&amp; (
+                    &lt;Text style={styles.invItemStats}&gt;
+                        Value: {item.value}
                     &lt;/Text&gt;
                 )}
             &lt;/TouchableOpacity&gt;
@@ -592,7 +622,7 @@ const GearScreen = () =&gt; {
 &nbsp;
     return (
         &lt;SafeAreaView style={styles.container}&gt;
-            &lt;SaveLoadControls /&gt;
+&nbsp;
             &lt;View style={styles.statsPanel}&gt;
                 &lt;Text style={styles.panelTitle}&gt;PLAYER STATS&lt;/Text&gt;
                 &lt;Text style={styles.coinText}&gt;Coins: {coins}&lt;/Text&gt;
@@ -754,7 +784,7 @@ export default GearScreen;
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-03T04:33:23.993Z
+                at 2026-03-18T04:34:09.530Z
             </div>
         <script src="../prettify.js"></script>
         <script>

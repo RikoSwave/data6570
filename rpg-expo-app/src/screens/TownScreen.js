@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, FlatList, Platform, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,9 @@ const TownScreen = () => {
     const [resting, setResting] = useState(false);
     const [timeLeft, setTimeLeft] = useState(0);
     const [showTooltip, setShowTooltip] = useState(false);
+    const [actionPrompt, setActionPrompt] = useState(null);
+    const [quantityInput, setQuantityInput] = useState('1');
+    const [questRewardMsg, setQuestRewardMsg] = useState('');
 
     // Refresh shops on mount if needed
     useEffect(() => {
@@ -40,27 +43,63 @@ const TownScreen = () => {
         }
     };
 
-    const handleSellItem = (item) => {
+    const handleSellItemInput = (item) => {
+        if (item.type === 'Resource' && item.quantity > 1) {
+            setActionPrompt({ item, type: 'Sell' });
+            setQuantityInput(item.quantity.toString());
+        } else {
+            handleSellItem(item, 1);
+        }
+    };
+
+    const handleDonateItemInput = (item) => {
+        if (item.type === 'Resource' && item.quantity > 1) {
+            setActionPrompt({ item, type: 'Donate' });
+            setQuantityInput(item.quantity.toString());
+        } else {
+            handleDonateItem(item, 1);
+        }
+    };
+
+    const confirmAction = () => {
+        if (!actionPrompt) return;
+        let qty = parseInt(quantityInput, 10);
+        if (isNaN(qty) || qty < 1) {
+            Alert.alert("Invalid", "Enter a positive number.");
+            return;
+        }
+        if (qty > (actionPrompt.item.quantity || 1)) qty = actionPrompt.item.quantity;
+
+        if (actionPrompt.type === 'Sell') {
+            handleSellItem(actionPrompt.item, qty);
+        } else {
+            handleDonateItem(actionPrompt.item, qty);
+        }
+        setActionPrompt(null);
+    };
+
+    const handleSellItem = (item, quantity = 1) => {
         const sellValue = item.name.includes('Lucky') ? Math.floor(item.value * 1.5) : item.value;
-        const msg = `Sell ${item.name} for ${sellValue}c?`;
+        const totalValue = sellValue * quantity;
+        const msg = `Sell ${quantity}x ${item.name} for ${totalValue}c?`;
         if (Platform.OS === 'web') {
-            if (window.confirm(msg)) sellItemToShop(item);
+            if (window.confirm(msg)) sellItemToShop(item, quantity);
         } else {
             Alert.alert("Sell Item", msg, [
                 { text: "Cancel", style: "cancel" },
-                { text: "Sell", onPress: () => sellItemToShop(item) }
+                { text: "Sell", onPress: () => sellItemToShop(item, quantity) }
             ]);
         }
     };
 
-    const handleDonateItem = (item) => {
-        const msg = `Donate ${item.name}?`;
+    const handleDonateItem = (item, quantity = 1) => {
+        const msg = `Donate ${quantity}x ${item.name}?`;
         if (Platform.OS === 'web') {
-            if (window.confirm(msg)) donateItem(item);
+            if (window.confirm(msg)) donateItem(item, quantity);
         } else {
             Alert.alert("Donate", msg, [
                 { text: "Cancel", style: "cancel" },
-                { text: "Donate", onPress: () => donateItem(item) }
+                { text: "Donate", onPress: () => donateItem(item, quantity) }
             ]);
         }
     };
@@ -187,7 +226,7 @@ const TownScreen = () => {
                     data={type === 'Blacksmith' ? inventory.filter(i => i.type !== 'Potion') : inventory.filter(i => i.type === 'Potion')}
                     keyExtractor={item => item.id}
                     renderItem={({ item }) => (
-                        <TouchableOpacity style={styles.itemRow} onPress={() => handleSellItem(item)}>
+                        <TouchableOpacity style={styles.itemRow} onPress={() => handleSellItemInput(item)}>
                             <View style={styles.itemInfo}>
                                 <Text style={styles.itemName}>
                                     {item.name} {item.quantity && item.quantity > 1 ? `(x${item.quantity})` : ''}
@@ -253,8 +292,10 @@ const TownScreen = () => {
 
                         {activeQuest.isCompleted ? (
                             <TouchableOpacity style={styles.claimButton} onPress={() => {
+                                const rewardText = `Received ${activeQuest.rewardCoins} coins and ${activeQuest.rewardTownXP} Town XP!`;
                                 claimQuestReward();
-                                Alert.alert("Quest Complete", `Received ${activeQuest.rewardCoins} coins and ${activeQuest.rewardTownXP} Town XP!`);
+                                setQuestRewardMsg(rewardText);
+                                setTimeout(() => setQuestRewardMsg(''), 4000);
                             }}>
                                 <Text style={styles.buttonText}>CLAIM REWARD</Text>
                             </TouchableOpacity>
@@ -268,6 +309,12 @@ const TownScreen = () => {
                     </TouchableOpacity>
                 )}
             </View>
+
+            {questRewardMsg ? (
+                <View style={styles.rewardPopup}>
+                    <Text style={styles.rewardPopupText}>{questRewardMsg}</Text>
+                </View>
+            ) : null}
 
             <View style={styles.donationCenter}>
                 <Text style={styles.boardTitle}>Donation Center</Text>
@@ -284,7 +331,7 @@ const TownScreen = () => {
                         const itemXp = Math.ceil(sellValue * 1.1);
 
                         return (
-                            <TouchableOpacity style={styles.donateItem} onPress={() => handleDonateItem(item)}>
+                            <TouchableOpacity style={styles.donateItem} onPress={() => handleDonateItemInput(item)}>
                                 <Text style={styles.smallItemText} numberOfLines={2}>
                                     {item.name} {item.quantity && item.quantity > 1 ? `(x${item.quantity})` : ''}
                                 </Text>
@@ -297,8 +344,34 @@ const TownScreen = () => {
         </View>
     );
 
+    const renderActionPrompt = () => (
+        <Modal visible={!!actionPrompt} transparent animationType="fade">
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                    <Text style={styles.headerTitle}>{actionPrompt?.type} {actionPrompt?.item?.name}</Text>
+                    <Text style={styles.descriptionText}>How many? (Max {actionPrompt?.item?.quantity || 1})</Text>
+                    <TextInput 
+                        style={styles.modalInput}
+                        keyboardType="number-pad"
+                        value={quantityInput}
+                        onChangeText={setQuantityInput}
+                    />
+                    <View style={styles.modalButtons}>
+                        <TouchableOpacity style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setActionPrompt(null)}>
+                            <Text style={styles.buttonText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={[styles.modalBtn, styles.modalBtnConfirm]} onPress={confirmAction}>
+                            <Text style={styles.buttonText}>Confirm</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
+
     return (
         <SafeAreaView style={styles.container}>
+            {renderActionPrompt()}
             {view === 'HUB' && renderHub()}
             {view === 'BLACKSMITH' && renderShop('Blacksmith')}
             {view === 'POTION' && renderShop('Potion')}
@@ -588,6 +661,58 @@ const styles = StyleSheet.create({
         color: '#2ecc71',
         fontSize: 12,
         fontWeight: 'bold',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: '#2c3e50',
+        padding: 20,
+        borderRadius: 10,
+        width: '80%',
+        alignItems: 'center',
+    },
+    modalInput: {
+        backgroundColor: '#fff',
+        width: '100%',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 20,
+        textAlign: 'center',
+        fontSize: 18,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-around',
+    },
+    modalBtn: {
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+        minWidth: 100,
+        alignItems: 'center',
+    },
+    modalBtnCancel: {
+        backgroundColor: '#e74c3c',
+    },
+    modalBtnConfirm: {
+        backgroundColor: '#27ae60',
+    },
+    rewardPopup: {
+        backgroundColor: '#27ae60',
+        padding: 10,
+        borderRadius: 5,
+        marginBottom: 20,
+        alignItems: 'center',
+    },
+    rewardPopupText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16,
     },
 });
 

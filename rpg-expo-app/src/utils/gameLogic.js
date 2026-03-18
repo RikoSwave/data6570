@@ -65,16 +65,20 @@ export const getLevelFromXP = (xp) => {
 export const calculateCombatStats = (level, gearStats) => {
     // Base stats from level
     const baseStats = {
-        accuracy: level * 2,
-        maxHit: Math.floor(level / 2) + 1,
-        defence: level * 2,
-        stamina: level * 10 // Base stamina
+        accuracy: level * 3,
+        maxHit: Math.floor(level) + 1,
+        defence: level * 3,
+        stamina: level * 15 // Base stamina
     };
+
+    // Calculate percentages strictly against base stats
+    const accBonus = Math.floor(baseStats.accuracy * ((gearStats.accuracyPercent || 0) / 100));
+    const strBonus = Math.floor(baseStats.maxHit * ((gearStats.maxHitPercent || 0) / 100));
 
     // Add gear stats
     return {
-        accuracy: baseStats.accuracy + (gearStats.accuracy || 0),
-        maxHit: baseStats.maxHit + (gearStats.maxHit || 0),
+        accuracy: baseStats.accuracy + accBonus + (gearStats.accuracy || 0),
+        maxHit: baseStats.maxHit + strBonus + (gearStats.maxHit || 0),
         defence: baseStats.defence + (gearStats.defence || 0),
         stamina: baseStats.stamina + (gearStats.stamina || 0)
     };
@@ -86,43 +90,34 @@ export const CREATURES = [
     { id: 'goblin', name: 'Small Goblin', stamina: 50, defence: 5, maxHit: 4, xp: 30 }
 ];
 
+export const getBossStats = (bossesDefeated) => {
+    return {
+        hp: 50 + ((bossesDefeated) ^ 2 * 50),
+        defence: 10 + ((bossesDefeated) ^ 2 * 5),
+        maxHit: 5 + ((bossesDefeated) ^ 2 * 2),
+        accuracy: 10 + ((bossesDefeated) ^ 2 * 5)
+    };
+};
+
 export const challengeBoss = (playerStats) => {
-    // "Clicking on that button will start a 5 second countdown, followed by the result of the fight (success or fail)."
-    // "Challenge Boss will ultimately be a check to see if they can deal enough damage before the boss defeats them."
-
-    // We need a difficulty metric. User didn't specify boss stats scaling.
-    // Let's make the boss scale with player level slightly or have fixed tiers?
-    // "Challenge boss" implies A boss. Let's make it increasingly harder based on "bosses defeated".
-
-    // Assumption: We pass in 'bossesDefeated' count.
-    // Boss HP = 50 + (bossesDefeated * 20)
-    // Player Dps ~ MaxHit / 2 (avg) * Accuracy% ??
-
-    // Helper function will just return true/false based on stats.
-    // We can simulate a 5 second fight instantly or just compare values.
-    // Since it's a 5s countdown, we can just return the result at the end.
-
     return (bossesDefeated) => {
-        const bossHP = 50 + (bossesDefeated * 50);
-        const bossDefence = 10 + (bossesDefeated * 5);
-        const bossDamage = 5 + (bossesDefeated * 2);
+        const bossStats = getBossStats(bossesDefeated);
+        const bossHP = bossStats.hp;
+        const bossDefence = bossStats.defence;
+        const bossDamage = bossStats.maxHit;
 
-        // Player damage output in 5 seconds (say 10 hits? or just simplified DPS)
-        // Let's say 5 attacks.
+        // Player damage output in 5 seconds.
         const playerHitChance = Math.min(0.95, playerStats.accuracy / (bossDefence * 2));
         const playerAvgHit = (playerStats.maxHit / 2) * playerHitChance;
-        const totalPlayerDamage = playerAvgHit * 5; // 5 seconds, 1 hit per sec?
+        const totalPlayerDamage = playerAvgHit * 5;
 
         // Boss damage to player
-        // If player survives and kills boss?
-        // "check to see if they can deal enough damage before the boss defeats them"
-        const playerHP = 50 + (playerStats.defence * 2); // Arbitrary HP formula - THIS IS OLD LOGIC but acceptable for boss "simulation" validity check
-        // We could update this to use playerStats.stamina if we want consistent logic, but this function returns a boolean closure.
+        const playerHP = 50 + (playerStats.defence * 2);
 
-        const bossHitChance = 0.5; // Flat for simplicity?
-        const bossTotalDamage = (bossDamage * 0.5) * 5;
+        // Calculate boss accuracy against player defence instead of flat 0.5
+        const bossHitChance = Math.min(0.95, bossStats.accuracy / (playerStats.defence * 2 + 1));
+        const bossTotalDamage = (bossDamage * bossHitChance) * 5;
 
-        // Using calculated HP or new stamina? Let's use Stamina if available, else fallback
         const effectiveHP = playerStats.stamina || playerHP;
 
         if (bossTotalDamage >= effectiveHP) return false; // Player died
@@ -197,19 +192,27 @@ export const generateRandomGear = (level) => {
     baseStat = Math.max(1, baseStat);
 
     let stats = { accuracy: 0, maxHit: 0, defence: 0, stamina: 0 };
+    
+    // Percent chance roll
+    const rollPercent = Math.random() < 0.33;
 
     switch (slotData.type) {
         case 'Weapon':
-            stats.accuracy = baseStat;
-            stats.maxHit = Math.floor(baseStat / 2);
+            if (rollPercent) {
+                stats.accuracyPercent = Math.max(5, (tier + 1) * 3);
+                stats.maxHitPercent = Math.max(5, (tier + 1) * 3);
+            } else {
+                stats.accuracy = Math.floor(baseStat / 1.5);
+                stats.maxHit = Math.floor(baseStat / 1.5);
+            }
             break;
         case 'Armor':
             stats.defence = baseStat;
-            stats.stamina = Math.floor(baseStat / 2); // Body helps stamina
+            stats.stamina = Math.floor(baseStat / 2);
             break;
         case 'Legs':
             stats.defence = baseStat;
-            stats.stamina = Math.floor(baseStat / 3); // Legs help stamina
+            stats.stamina = Math.floor(baseStat / 3);
             break;
         case 'Helmet':
             stats.defence = Math.floor(baseStat * 0.8);
@@ -217,7 +220,7 @@ export const generateRandomGear = (level) => {
             break;
         case 'Boots':
             stats.defence = Math.floor(baseStat / 2);
-            stats.maxHit = Math.floor(baseStat / 4);
+            stats.maxHit = Math.floor(baseStat / 3);
             break;
         case 'Gloves':
             stats.accuracy = Math.floor(baseStat / 3);
@@ -233,13 +236,24 @@ export const generateRandomGear = (level) => {
             }
             break;
         case 'Amulet':
-            stats.accuracy = Math.floor(baseStat * 0.8);
-            stats.defence = Math.floor(baseStat * 0.8);
+            if (rollPercent) {
+                stats.accuracyPercent = Math.max(5, (tier + 1) * 5);
+            } else {
+                stats.accuracy = Math.floor(baseStat * 0.8);
+                stats.defence = Math.floor(baseStat * 0.3);
+                stats.maxHit = Math.floor(baseStat * 0.5);
+            }
             break;
         case 'Magic Artifact':
-            stats.maxHit = Math.floor(baseStat * 0.8);
-            stats.accuracy = Math.floor(baseStat * 0.5);
-            stats.speedBonus = (tier + 1) * 5;
+            if (rollPercent) {
+                stats.maxHitPercent = Math.max(5, (tier + 1) * 5);
+                stats.speedBonus = (tier + 1) * 2;
+            } else {
+                stats.maxHit = Math.floor(baseStat * 0.8);
+                stats.accuracy = Math.floor(baseStat * 0.5);
+                stats.stamina = Math.floor(baseStat * 0.2);
+                stats.speedBonus = (tier + 1) * 2;
+            }
             break;
     }
 
@@ -264,7 +278,7 @@ export const generateRandomGear = (level) => {
 };
 
 // Potion Logic
-export const POTION_TYPES = ['Accuracy', 'Strength', 'Defence'];
+export const POTION_TYPES = ['Accuracy', 'Strength', 'Defence', 'Health'];
 export const POTION_TIERS = ['Basic', 'Good', 'Rare', 'Legendary'];
 
 export const DUNGEON_TYPES = {
@@ -289,18 +303,22 @@ export const generatePotion = (dungeonType) => {
     const type = POTION_TYPES[Math.floor(Math.random() * POTION_TYPES.length)];
 
     let multiplier = 1.1; // Basic = +10%
+    let healPercent = 0.25; // 25% max HP heal
     let value = 5; // Basic sell value (Cost 10)
 
     if (tier === 'Good') {
         multiplier = 1.25; // +25%
+        healPercent = 0.50; 
         value = 25; // Good sell value (Cost 50)
     }
     if (tier === 'Rare') {
         multiplier = 1.5; // +50%
+        healPercent = 0.75; 
         value = 100; // Rare sell value (Cost 200)
     }
     if (tier === 'Legendary') {
         multiplier = 2.0; // +100%
+        healPercent = 1.0; 
         value = 150; // Legendary sell value (obtained from 200 cost dungeon)
     }
 
@@ -308,8 +326,9 @@ export const generatePotion = (dungeonType) => {
         id: Math.random().toString(36).substr(2, 9),
         name: `${tier} ${type} Potion`,
         type: 'Potion',
-        effectType: type, // 'Accuracy', 'Strength', 'Defence'
-        multiplier: multiplier,
+        effectType: type, // 'Accuracy', 'Strength', 'Defence', 'Health'
+        multiplier: type === 'Health' ? 1 : multiplier,
+        healPercent: type === 'Health' ? healPercent : 0,
         value: value
     };
 };

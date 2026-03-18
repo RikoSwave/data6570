@@ -22,12 +22,13 @@ const GearScreen = () => {
                 {item ? (
                     <View>
                         <Text style={styles.itemName}>{item.name}</Text>
-                        <Text style={styles.itemStats}>
-                            {item.stats.accuracy ? `Acc: +${item.stats.accuracy} ` : ''}
-                            {item.stats.maxHit ? `Str: +${item.stats.maxHit} ` : ''}
-                            {item.stats.defence ? `Def: +${item.stats.defence} ` : ''}
-                            {item.stats.speedBonus ? `Spd: +${item.stats.speedBonus}%` : ''}
-                        </Text>
+                        {item?.stats?.maxHitPercent && <Text style={styles.itemStats}>Str: +{item.stats.maxHitPercent}%</Text>}
+                        {item?.stats?.accuracyPercent && <Text style={styles.itemStats}>Acc: +{item.stats.accuracyPercent}%</Text>}
+                        {item?.stats?.maxHit > 0 && <Text style={styles.itemStats}>Str: +{item.stats.maxHit}</Text>}
+                        {item?.stats?.accuracy > 0 && <Text style={styles.itemStats}>Acc: +{item.stats.accuracy}</Text>}
+                        {item?.stats?.defence > 0 && <Text style={styles.itemStats}>Def: +{item.stats.defence}</Text>}
+                        {item?.stats?.stamina > 0 && <Text style={styles.itemStats}>HP: +{item.stats.stamina}</Text>}
+                        {item?.stats?.speedBonus > 0 && <Text style={styles.itemStats}>Spd: +{item.stats.speedBonus}%</Text>}
                     </View>
                 ) : (
                     <Text style={styles.emptyText}>Empty</Text>
@@ -54,12 +55,15 @@ const GearScreen = () => {
                     <Text style={styles.invItemType}>{item.type}</Text>
                 </View>
                 {item.type !== 'Potion' && item.type !== 'Resource' && item.stats && (
-                    <Text style={styles.invItemStats}>
-                        {item.stats.accuracy ? `Acc: ${item.stats.accuracy} ` : ''}
-                        {item.stats.maxHit ? `Str: ${item.stats.maxHit} ` : ''}
-                        {item.stats.defence ? `Def: ${item.stats.defence} ` : ''}
-                        {item.stats.speedBonus ? `Spd: ${item.stats.speedBonus}%` : ''}
-                    </Text>
+                    <View>
+                        {item.stats.maxHitPercent && <Text style={styles.invItemStats}>Str: +{item.stats.maxHitPercent}%</Text>}
+                        {item.stats.accuracyPercent && <Text style={styles.invItemStats}>Acc: +{item.stats.accuracyPercent}%</Text>}
+                        {item.stats.maxHit > 0 && <Text style={styles.invItemStats}>Str: +{item.stats.maxHit}</Text>}
+                        {item.stats.accuracy > 0 && <Text style={styles.invItemStats}>Acc: +{item.stats.accuracy}</Text>}
+                        {item.stats.defence > 0 && <Text style={styles.invItemStats}>Def: +{item.stats.defence}</Text>}
+                        {item.stats.stamina > 0 && <Text style={styles.invItemStats}>HP: +{item.stats.stamina}</Text>}
+                        {item.stats.speedBonus > 0 && <Text style={styles.invItemStats}>Spd: +{item.stats.speedBonus}%</Text>}
+                    </View>
                 )}
                 {item.type === 'Potion' && (
                     <Text style={styles.invItemStats}>

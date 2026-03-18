@@ -10,14 +10,24 @@ import { useGame } from '../context/GameContext';
 import { DUNGEON_TYPES } from '../utils/gameLogic';
 
 const ExploreDungeonScreen = () => {
-    const { exploreDungeon, inventory, gearStats, coins, payCoins } = useGame();
+    const { currentStamina, playerStats, exploreDungeon, inventory, gearStats, coins, payCoins, consumePotion } = useGame();
     const [isExploring, setIsExploring] = useState(false);
+    const isExploringRef = useRef(isExploring);
+
+    // Health Potion logic
+    const healthPotions = useMemo(() => {
+        return inventory.filter(p => p.type === 'Potion' && p.effectType === 'Health');
+    }, [inventory]);
     const [timer, setTimer] = useState(0);
     const [log, setLog] = useState([]);
     const [maxTime, setMaxTime] = useState(15);
     const [selectedDungeonKey, setSelectedDungeonKey] = useState('GEAR');
 
     const selectedDungeon = DUNGEON_TYPES[selectedDungeonKey];
+
+    useEffect(() => {
+        isExploringRef.current = isExploring;
+    }, [isExploring]);
 
     useEffect(() => {
         // Calculate modified explore time
@@ -29,25 +39,48 @@ const ExploreDungeonScreen = () => {
 
     useEffect(() => {
         let interval;
+        const handleExplorationEnd = async () => {
+            // Finished
+            const exploreResult = await exploreDungeon(selectedDungeonKey);
+            if (exploreResult.success) {
+                const foundItem = exploreResult.reward;
+                const logEntry = foundItem.type === 'Potion'
+                    ? `Found ${foundItem.name}!`
+                    : `Found ${foundItem.name}! (Acc: ${foundItem.stats.accuracyPercent ? `+${foundItem.stats.accuracyPercent}%` : `+${foundItem.stats.accuracy || 0}`}, Str: ${foundItem.stats.maxHitPercent ? `+${foundItem.stats.maxHitPercent}%` : `+${foundItem.stats.maxHit || 0}`}, Def: +${foundItem.stats.defence || 0}, HP: +${foundItem.stats.stamina || 0})`;
+                setLog(prev => [logEntry, ...prev].slice(0, 15));
+                setIsExploring(false);
+            } else if (exploreResult.reason === 'trap') {
+                setLog(prev => [`Trapped! Took ${exploreResult.damage} damage.`, ...prev].slice(0, 15));
+                if (exploreResult.died) {
+                    Alert.alert("Rescued!", "You collapsed in the dungeon! The village guard rescued you for a fee.");
+                    setLog(prev => [`Rescued by village guard!`, ...prev].slice(0, 15));
+                    setIsExploring(false);
+                } else {
+                    setIsExploring(false);
+                }
+            } else if (exploreResult.reason === 'inventory_full') {
+                setLog(prev => ['Inventory full! Cannot carry more.', ...prev].slice(0, 15));
+                Alert.alert("Inventory Full", "You cannot carry any more items.");
+                setIsExploring(false);
+            }
+        };
+
         if (isExploring && timer > 0) {
             interval = setInterval(() => {
                 setTimer((prev) => prev - 1);
             }, 1000);
         } else if (isExploring && timer === 0) {
-            // Finished
-            const reward = exploreDungeon(selectedDungeonKey);
-            // Log logic
-            if (reward.type === 'Potion') {
-                setLog(prev => [`Found: ${reward.name} (${reward.effectType} x${reward.multiplier})`, ...prev]);
-            } else {
-                setLog(prev => [`Found: ${reward.name} (Acc: ${reward.stats.accuracy || 0}, Str: ${reward.stats.maxHit || 0}, Def: ${reward.stats.defence || 0})`, ...prev]);
-            }
-            setIsExploring(false);
+            handleExplorationEnd();
         }
         return () => clearInterval(interval);
     }, [isExploring, timer, exploreDungeon, selectedDungeonKey]);
 
     const handleExplore = () => {
+        if (currentStamina <= 0) {
+            Alert.alert('Exhausted', 'You have no stamina left to explore. Rest or use a health potion first.');
+            return;
+        }
+
         if (selectedDungeon.cost > 0) {
             const success = payCoins(selectedDungeon.cost);
             if (!success) {
@@ -107,6 +140,25 @@ const ExploreDungeonScreen = () => {
             {renderDungeonSelector()}
 
             <View style={styles.mainContent}>
+
+                {/* Health Potions Section */}
+                {healthPotions.length > 0 && (
+                    <View style={styles.potionContainer}>
+                        <Text style={styles.sectionTitle}>Use Health Potion:</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.potionScroll}>
+                            {healthPotions.map(potion => (
+                                <TouchableOpacity 
+                                    key={potion.id} 
+                                    style={styles.potionButton}
+                                    onPress={() => consumePotion(potion)}
+                                >
+                                    <Text style={styles.potionText}>{potion.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
                 <Text style={styles.dungeonDescription}>{selectedDungeon.description}</Text>
                 {isExploring ? (
                     <View style={styles.progressContainer}>
@@ -296,6 +348,27 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontWeight: 'bold',
         textTransform: 'uppercase',
+    },
+    potionContainer: {
+        marginBottom: 15,
+        backgroundColor: '#2c3e50',
+        padding: 10,
+        borderRadius: 5,
+    },
+    potionScroll: {
+        flexDirection: 'row',
+    },
+    potionButton: {
+        backgroundColor: '#e74c3c',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 3,
+        marginRight: 10,
+    },
+    potionText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
 });
 
