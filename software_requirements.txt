@@ -1,0 +1,54 @@
+# RPG Application Software Requirements
+
+Based on the current functional state of the application, the following list defines the system's software requirements. The application consists of a mobile client (React Native/Expo) and a RESTful backend (Django).
+
+## 1. User Authentication & Profile
+- **REQ-1.1:** The system must allow users to register a new account with a username and password.
+- **REQ-1.2:** The system must allow users to log in and receive an authentication token.
+- **REQ-1.3:** The system must allow users to securely log out and clear their session.
+- **REQ-1.4:** The system must allow each user to create a named character linked to their account.
+- **REQ-1.5:** The system must save the character's full state (XP, level, inventory, gear, coins, stamina, town progress) to the backend database periodically and explicitly on demand.
+- **REQ-1.6:** The system must restore the character's state from the backend upon user login or app initialization.
+
+## 2. Core Gameplay Mechanics
+- **REQ-2.1:** The primary attribute of the character is Experience (XP), which determines the Combat Level.
+- **REQ-2.2:** Leveling up must increase maximum base stats: Accuracy, Max Hit (Strength), Defence, and Maximum Stamina (Health).
+- **REQ-2.3:** The system must provide a "Train Combat" feature yielding XP and minor resource drops.
+- **REQ-2.4:** The combat system must calculate success and damage using player stats (including gear and active potion modifiers) vs target stats over a simulated time window.
+- **REQ-2.5:** The character has a limited Stamina pool which is depleted by combat/traps and restored over time, via Health potions, or by resting at the Town Inn.
+
+## 3. Boss Battles
+- **REQ-3.1:** Players must be able to challenge bosses that scale dynamically; boss HP, Defence, Max Hit, and Accuracy increase relative to the number of bosses already defeated.
+- **REQ-3.2:** A successful boss defeat must increment the `bossesDefeated` counter and trigger a call to the backend drop table for a reward.
+
+## 4. Dungeon Exploration System
+- **REQ-4.1:** The system must provide multiple timed Dungeon types (e.g., Gear Dungeon, Basic/Good/Rare Potion Dungeons).
+- **REQ-4.2:** Dungeon entry must deduct required entry costs (Stamina and/or Coins).
+- **REQ-4.3:** Dungeon exploration must happen over a real-time interval (e.g., 15-30 seconds), modifiable by the player's Speed Bonus stat.
+- **REQ-4.4:** The exploration event must include a risk of triggering a trap based on player/town level and dungeon difficulty. Traps reduce Stamina and can cause a character to collapse.
+- **REQ-4.5:** If a character collapses in a dungeon, a rescue tax must be applied, deducting a portion of the player's coins, with a pity system allowing a free rescue if coins are depleted.
+- **REQ-4.6:** Successful exploration must reward the player by generating randomized gear or potions based on the selected dungeon tier, provided there is inventory space.
+
+## 5. Items, Inventory, and Equipment
+- **REQ-5.1:** The character must have a limited inventory system (default maximum of 10 slots).
+- **REQ-5.2:** Stackable "Resource" items must accumulate in a single slot. "Gear" and "Potion" items must occupy one slot each.
+- **REQ-5.3:** The system must dynamically generate Gear items on drop with randomized stats, tier prefixes (e.g., Iron, Rune, Dragon), and rare/lucky variance limits.
+- **REQ-5.4:** The character must have specific equipable slots: Weapon, Armor, Helmet, Legs, Boots, Gloves, Shield, Amulet, and Magic Artifact.
+- **REQ-5.5:** Equipping an item must recalculate the player's aggregated Combat Stats (Accuracy, Max Hit, Defence, Stamina, Speed).
+- **REQ-5.6:** The system must supply consumable Potions that fall into categories (Accuracy, Strength, Defence, Health) and tiers (Basic, Good, Rare, Legendary).
+- **REQ-5.7:** Stat buff potions must apply a temporary multiplier to the character's base stats for a specific time duration (1-4 minutes), managed by an active potion timer system.
+
+## 6. Town and Economy
+- **REQ-6.1:** The game must feature an in-game currency (Coins) used for trading and accessing high-tier features.
+- **REQ-6.2:** The game must track a distinct Town Level and Town XP, which unlocks better shop stock and higher-tier potion accessibility.
+- **REQ-6.3:** The Town must offer a Blacksmith (generating high-cost Gear arrays) and a Potion Shop (generating potions), which refresh their inventory stock based on a cooldown timer.
+- **REQ-6.4:** Players must be able to buy items from shops and sell unwanted items for Coins.
+- **REQ-6.5:** The Town must offer an Inn where players can spend coins to instantly restore Stamina. A "pity system" must grant free partial restoration to completely broke players with critically low stamina.
+- **REQ-6.6:** The Town must supply dynamically generated Quests (e.g., "Defeat 5 Chickens") that grant Coins and Town XP on completion.
+- **REQ-6.7:** Players must be able to donate items to the Town to gain Town XP in lieu of selling them for coins.
+
+## 7. Backend Data & Services (Django)
+- **REQ-7.1:** The backend must expose REST API endpoints for user entity administration (Auth token issuance, validation, and invalidation).
+- **REQ-7.2:** The backend must define a schema to securely store structured JSON blobs mapping to a user profile's exact game state upon save requests.
+- **REQ-7.3:** The backend must host a data-driven Monster Drop Table configuration mapping monsters to loot configurations (Item Names, Quantity, Weighted Probability Drop Rates).
+- **REQ-7.4:** The backend must compute drop logic server-side to prevent simple client-side manipulation of loot assignment.

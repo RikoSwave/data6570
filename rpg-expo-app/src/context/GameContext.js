@@ -104,7 +104,11 @@ export const GameProvider = ({ children }) => {
     useEffect(() => {
         const interval = setInterval(() => {
             const now = Date.now();
-            setActivePotions(prev => prev.filter(p => !p.expiresAt || p.expiresAt >= now));
+            setActivePotions(prev => {
+                const nextPotions = prev.filter(p => !p.expiresAt || p.expiresAt >= now);
+                if (nextPotions.length === prev.length) return prev; // Avoid unnecessary re-renders
+                return nextPotions;
+            });
         }, 1000);
         return () => clearInterval(interval);
     }, []);
@@ -353,15 +357,24 @@ export const GameProvider = ({ children }) => {
 
     const restAtInn = async () => {
         const cost = 10;
-        if (coins < cost) return false;
+        if (coins < cost) {
+            if (currentStamina <= playerStats.stamina * 0.05) {
+                return 'free';
+            }
+            return false;
+        }
 
         setCoins(prev => prev - cost);
         // Wait is handled by caller usually for UI feedback, but we can return true to signal start
         return true;
     };
 
-    const completeInnRest = () => {
-        setCurrentStamina(playerStats.stamina);
+    const completeInnRest = (resultType) => {
+        if (resultType === 'free') {
+            healPlayer(Math.floor(playerStats.stamina * 0.5));
+        } else {
+            setCurrentStamina(playerStats.stamina);
+        }
     };
 
     const startQuest = () => {
@@ -478,29 +491,33 @@ export const GameProvider = ({ children }) => {
             const trapDamage = Math.floor(playerStats.stamina * 0.2) + 5;
             let died = false;
             let finalStamina = currentStamina - trapDamage;
+            let coinsLost = 0;
             
             if (finalStamina <= 0) {
-                finalStamina = 0;
                 died = true;
                 const penaltyCost = 25 + (bossesDefeated * 25);
+                coinsLost = Math.min(coins, penaltyCost);
                 setCoins(prev => Math.max(0, prev - penaltyCost));
+                finalStamina = 1 + coinsLost;
             }
             
-            takeDamage(trapDamage);
-            return { success: false, reason: 'trap', damage: trapDamage, died };
+            if (died) {
+                setCurrentStamina(finalStamina);
+            } else {
+                takeDamage(trapDamage);
+            }
+            return { success: false, reason: 'trap', damage: trapDamage, died, coinsLost };
         }
 
         // Generate Item
         let item;
-        let isPotion = dungeonType.includes('Potion');
-        let tier = dungeonType.split(' ')[0];
+        let isPotion = dungeonType.includes('POTION');
 
         if (isPotion) {
-            item = generatePotion(tier);
+            item = generatePotion(dungeonType);
         } else {
             const playerLevelForGear = combatLevel;
             item = generateRandomGear(playerLevelForGear);
-            item.name = `${tier} ${item.name}`; // Prefix with tier
         }
         
         // Add to inventory if space

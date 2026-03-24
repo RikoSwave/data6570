@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ProgressBarAndroid, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
@@ -39,6 +39,15 @@ const ExploreDungeonScreen = () => {
 
     useEffect(() => {
         let interval;
+        if (isExploring && timer > 0) {
+            interval = setInterval(() => {
+                setTimer((prev) => prev - 1);
+            }, 1000);
+        }
+        return () => clearInterval(interval);
+    }, [isExploring, timer]);
+
+    useEffect(() => {
         const handleExplorationEnd = async () => {
             // Finished
             const exploreResult = await exploreDungeon(selectedDungeonKey);
@@ -52,8 +61,13 @@ const ExploreDungeonScreen = () => {
             } else if (exploreResult.reason === 'trap') {
                 setLog(prev => [`Trapped! Took ${exploreResult.damage} damage.`, ...prev].slice(0, 15));
                 if (exploreResult.died) {
-                    Alert.alert("Rescued!", "You collapsed in the dungeon! The village guard rescued you for a fee.");
-                    setLog(prev => [`Rescued by village guard!`, ...prev].slice(0, 15));
+                    if (exploreResult.coinsLost > 0) {
+                        Alert.alert("Rescued!", `You collapsed in the dungeon! The village guard rescued you for ${exploreResult.coinsLost} coins.`);
+                        setLog(prev => [`Rescued by village guard for ${exploreResult.coinsLost} coins!`, ...prev].slice(0, 15));
+                    } else {
+                        Alert.alert("Rescued!", "The village guard took pity on you and rescued you for free.");
+                        setLog(prev => [`Rescued by village guard for free!`, ...prev].slice(0, 15));
+                    }
                     setIsExploring(false);
                 } else {
                     setIsExploring(false);
@@ -65,14 +79,9 @@ const ExploreDungeonScreen = () => {
             }
         };
 
-        if (isExploring && timer > 0) {
-            interval = setInterval(() => {
-                setTimer((prev) => prev - 1);
-            }, 1000);
-        } else if (isExploring && timer === 0) {
+        if (isExploring && timer === 0) {
             handleExplorationEnd();
         }
-        return () => clearInterval(interval);
     }, [isExploring, timer, exploreDungeon, selectedDungeonKey]);
 
     const handleExplore = () => {

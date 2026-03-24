@@ -10,7 +10,8 @@ const TownScreen = () => {
         townLevel, townXP, activeQuest, shopStock,
         refreshShops, buyItem, sellItemToShop, restAtInn, completeInnRest,
         startQuest, updateQuestProgress, claimQuestReward, donateItem,
-        inventory, coins, playerStats, calculateTownXPForLevel, xp, equipped
+        inventory, coins, playerStats, calculateTownXPForLevel, xp, equipped,
+        currentStamina
     } = useGame();
 
     const [view, setView] = useState('HUB'); // HUB, BLACKSMITH, POTION, INN, SQUARE
@@ -106,10 +107,14 @@ const TownScreen = () => {
 
     const handleRest = async () => {
         if (playerStats.stamina === undefined) return;
-        // Or check currentStamina context? 
 
-        const success = await restAtInn();
-        if (success) {
+        const result = await restAtInn();
+        if (result) {
+            let expectedHeal = playerStats.stamina - currentStamina;
+            if (result === 'free') {
+                expectedHeal = Math.min(expectedHeal, Math.floor(playerStats.stamina * 0.5));
+            }
+
             setResting(true);
             setTimeLeft(10);
             const timer = setInterval(() => {
@@ -117,8 +122,9 @@ const TownScreen = () => {
                     if (prev <= 1) {
                         clearInterval(timer);
                         setResting(false);
-                        completeInnRest();
-                        Alert.alert("Rested", "You feel refreshed! Stamina restored.");
+                        completeInnRest(result);
+                        const freeMsg = result === 'free' ? "Pity from the innkeeper... " : "";
+                        Alert.alert("Rested", `${freeMsg}You feel refreshed! ${expectedHeal > 0 ? expectedHeal : 0} HP restored.`);
                         return 0;
                     }
                     return prev - 1;
@@ -253,6 +259,7 @@ const TownScreen = () => {
 
             <View style={styles.restContainer}>
                 <Ionicons name="bed" size={64} color="#f1c40f" />
+                <Text style={styles.hpText}>HP: {Math.max(0, currentStamina)} / {playerStats.stamina}</Text>
                 <Text style={styles.descriptionText}>
                     Rest for a while to restore your strength.
                 </Text>
@@ -538,6 +545,12 @@ const styles = StyleSheet.create({
         padding: 40,
         borderRadius: 20,
         width: '100%',
+    },
+    hpText: {
+        color: '#e74c3c',
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginTop: 10,
     },
     descriptionText: {
         color: '#ccc',

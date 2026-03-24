@@ -6,6 +6,19 @@ import { useGame } from '../context/GameContext';
 import { GEAR_TYPES } from '../utils/gameLogic';
 
 
+const getStatsString = (stats) => {
+    if (!stats) return '';
+    const parts = [];
+    if (stats.maxHitPercent) parts.push(`Str: +${stats.maxHitPercent}%`);
+    if (stats.accuracyPercent) parts.push(`Acc: +${stats.accuracyPercent}%`);
+    if (stats.maxHit > 0) parts.push(`Str: +${stats.maxHit}`);
+    if (stats.accuracy > 0) parts.push(`Acc: +${stats.accuracy}`);
+    if (stats.defence > 0) parts.push(`Def: +${stats.defence}`);
+    if (stats.stamina > 0) parts.push(`HP: +${stats.stamina}`);
+    if (stats.speedBonus > 0) parts.push(`Spd: +${stats.speedBonus}%`);
+    return parts.join(' | ');
+};
+
 const GearScreen = () => {
     const { equipped, inventory, equipGear, unequipGear, playerStats, coins, consumePotion } = useGame();
 
@@ -22,13 +35,7 @@ const GearScreen = () => {
                 {item ? (
                     <View>
                         <Text style={styles.itemName}>{item.name}</Text>
-                        {item?.stats?.maxHitPercent && <Text style={styles.itemStats}>Str: +{item.stats.maxHitPercent}%</Text>}
-                        {item?.stats?.accuracyPercent && <Text style={styles.itemStats}>Acc: +{item.stats.accuracyPercent}%</Text>}
-                        {item?.stats?.maxHit > 0 && <Text style={styles.itemStats}>Str: +{item.stats.maxHit}</Text>}
-                        {item?.stats?.accuracy > 0 && <Text style={styles.itemStats}>Acc: +{item.stats.accuracy}</Text>}
-                        {item?.stats?.defence > 0 && <Text style={styles.itemStats}>Def: +{item.stats.defence}</Text>}
-                        {item?.stats?.stamina > 0 && <Text style={styles.itemStats}>HP: +{item.stats.stamina}</Text>}
-                        {item?.stats?.speedBonus > 0 && <Text style={styles.itemStats}>Spd: +{item.stats.speedBonus}%</Text>}
+                        <Text style={styles.itemStats}>{getStatsString(item.stats)}</Text>
                     </View>
                 ) : (
                     <Text style={styles.emptyText}>Empty</Text>
@@ -56,13 +63,7 @@ const GearScreen = () => {
                 </View>
                 {item.type !== 'Potion' && item.type !== 'Resource' && item.stats && (
                     <View>
-                        {item.stats.maxHitPercent && <Text style={styles.invItemStats}>Str: +{item.stats.maxHitPercent}%</Text>}
-                        {item.stats.accuracyPercent && <Text style={styles.invItemStats}>Acc: +{item.stats.accuracyPercent}%</Text>}
-                        {item.stats.maxHit > 0 && <Text style={styles.invItemStats}>Str: +{item.stats.maxHit}</Text>}
-                        {item.stats.accuracy > 0 && <Text style={styles.invItemStats}>Acc: +{item.stats.accuracy}</Text>}
-                        {item.stats.defence > 0 && <Text style={styles.invItemStats}>Def: +{item.stats.defence}</Text>}
-                        {item.stats.stamina > 0 && <Text style={styles.invItemStats}>HP: +{item.stats.stamina}</Text>}
-                        {item.stats.speedBonus > 0 && <Text style={styles.invItemStats}>Spd: +{item.stats.speedBonus}%</Text>}
+                        <Text style={styles.invItemStats}>{getStatsString(item.stats)}</Text>
                     </View>
                 )}
                 {item.type === 'Potion' && (

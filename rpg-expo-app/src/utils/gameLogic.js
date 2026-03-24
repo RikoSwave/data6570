@@ -193,8 +193,8 @@ export const generateRandomGear = (level) => {
 
     let stats = { accuracy: 0, maxHit: 0, defence: 0, stamina: 0 };
     
-    // Percent chance roll
-    const rollPercent = Math.random() < 0.33;
+    // Percent chance roll (only for Adamant or higher, which is tier 5+)
+    const rollPercent = (tier >= 5) && (Math.random() < 0.33);
 
     switch (slotData.type) {
         case 'Weapon':
