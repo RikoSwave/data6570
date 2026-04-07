@@ -1,0 +1,100 @@
+Game for the kids idea:
+
+Endless scroller game - Full stack
+	Art style will be 2d, light, comic, and fantasy themed.
+		Assets will be provided later. Generate a placeholder set of assets to use for now and instructions on how to replace them.
+	Intended audience is for kids between 3 and 8 years old.
+	I want to be able to host the back end on my desktop computer, and have other devices on my local network act as clients through a browser page. Use a simple SQLite database to store the account name, info, unlocks, number of coins, and all cosmetics.
+		The devices that will act like clients will primarily be chrome browsers on mobile phones set to landscape view.
+	Basics of the game - Auto scroll with a jump button and a special button that will trigger an unlockable speed boost. If the upgrade has not been purchased yet, hide the button.
+	Game startup - Create new character or load existing character.	
+		Make a new account only needs the name of the account and pick if you're a boy or girl.
+			Check that the name is not being used by another account.
+			Let them change very basic options about the player avatar's hair, face, and shirt color when creating the account.
+		Existing accounts will have progress saved to each account and it will not affect any of the other accounts.
+			Click on your character's name and it will load the profile.
+	Mount - You get to ride a mount and give the mount a name. 
+		You can pick one mount at the beginning after creating your character to be your first mount.
+			The user will be able to select one of the animal types, and then be presented with three cosmetically different versions of that animal to choose from.
+			The mount will get a basic collar that matches the color of the player's shirt that has the first letter of the mount's name on a name tag on that collar.
+		All mounts should have roughly the same size of hit box so that one mount is not inherently better or worse than the others, even if the animations of the character or mount go slightly outside of the hit box.  
+		Available mounts:
+			Dinosaur
+			Pig
+			wingless dragon
+			unicorn
+			cat
+			dog
+	Main page - Shows your character smiling, next to your current mount.
+		Top of page - name of person running, coin count, longest distance record
+		Start Level button - Start a run.
+			Run through a basic level. Some obstacles, some platforms. Player avatar and mount default position is %10 to the left of the middle of the screen.
+				Collect coins that are added to their money pouch for later.
+					You can fall into holes or run into a trap (saw, spikes, enemy) in the level, and that will be the end of that run.
+						When the run ends, have a "click anywhere to continue" message appear. Once they click, they are brought back to the main page.
+						If the user runs into a trap object, do a little animation where they fall off their mount and have a dazed expression on both the rider and mount.
+				User can run into obstacles, but there character will be stopped. The player can attempt to recover and jump over the obstacle, but if they stay there and the screen would move on without the player on the screen, their run ends. Player will slowly make their way back to the default position, assuming they don't run into 
+			Game will steadily get faster and faster as the player gets farther. Increase the game speed slightly every 100 meters of distance run.
+		Store button - spend your coins
+			Themes - Coins can be used to unlock different themes for levels, but the same mechanics.
+				Default should be a simple grassland theme with farm style background and obstacles.
+				Unlockable - a volcano landscape.
+				Unlockable - an astral landscape - Purple/black background, floating star particles, glowing moon platforms, spinning stars instead of saws.
+				Unlockable - fantasy landscape - enchanted forest with a variety of mystical creatures showing up in the background.
+				Unlockable - cotton candy cloud landscape - Pink clouds, lollipop obstacles, sticky syrup "holes".
+				Unlockable - Ancient landscape
+				Unlockable - Futuristic landscape
+			Cosmetics - Coins can be used to unlock cosmetics for the player's avatar.
+				Shirt colors
+				fancy clothes
+				hats
+				shoes
+				saddles
+				hats for mounts
+			Upgrades - Coins can be used to unlock other permanent upgrades. Higher the level unlocked, the more coins it takes per level.
+				Small speed boost that can break small obstacles on a 15 second cooldown, with each level either lowering the cooldown or increasing the amount that speed is boosted.
+				Max jump height is increased to 1.1 at level 1, 1.2 at level 2, and so on.
+				Ability to glide by holding the jump button. Glide distance depends on level unlocked. 
+					Each mount will have a unique animation for the duration of the glide. The unique animations will not remove any unlocked cosmetics from the player or mount during the animation.
+						Dinosaur - transform into a wing dinosaur
+						Pig - Gets a superhero cape that flaps in the wind. This will appear between the pig and the rider to make sure that it doesn't clip through the player's character model.
+						Wingless dragon - Sprout dragon wings
+						Unicorn - Gets Pegasus wings
+						Cat - Gets some booster rockets
+						Dog - Gets some booster rockets
+	Barn
+		Go and visit your mounts in their stall.
+			One mount at a time on the screen with left/right arrows on the sides of the screen. 
+				Going right will go from the player's first mount to the next mount that they have unlocked (if any).
+					They can go beyond their owned mounts and see an empty stall as long as they have not unlocked the maximum number of stalls.
+						The empty stall will have an "Unlock" button that will also show the price to unlock that stall.
+				Going left will take them back through the unlocked mounts. Pressing the left button on the player's original mount will bring the player back to the main page.
+			Each stall will have the animal's name above the door.
+			Player will be able to click on the animal in the stall and be prompted with a message that says, "Would you like to ride <mount_name>?" Yes or no?
+				Yes - the player will now appear alongside the selected mount on the main page and the player will ride that mount whenever they start a new run until they select a different mount.
+				No - Close the message box.
+			Two large buttons will be at the bottom of the screen:
+				Pet - simple animation where the character model will pet the back or side of the animal for a few seconds. Heart shapes will then rise from the animal to show it's appreciation, then the player's character will go back to a relaxed stance.
+				Feed - simple animation where the character model will reach into a nearby food sack, pull out some animal feed, and hold it to the animal's mouth. The animal will smile and eat it. Heart shapes will then rise from the animal to show it's appreciation, then the player's character will go back to a relaxed stance.
+		Buy new barn stalls with collected coins.
+			Select a mount type, and get three cosmetic variations of that animal.
+				New cosmetic variations for animals that are already owned will not be the same as mounts that are already owned by that user.
+			User will be able to buy up to five additional stalls (six total, including the first mount given at the beginning of the game.)
+				Cost will start out low, then ramp up to being very high for the final barn stall unlock.
+	Settings
+		Break warning (optional, default is inactive)
+			Set a timer that alerts the user when they need to take a break
+	Other requirements:
+		The code should also be able to handle multiple users on the same network.
+		The backend should be able to run on a raspberry pi 5.
+		There should be at least 80% code coverage.
+		The code should be well documented and easy to understand.
+		The code should also come with installation instructions on how to get the backend to run on a raspberry pi 5 with instructions on how to set up a static local host name of http://game-server.local.
+		The code should communicate between the clients and the server with API calls.
+		Any API calls should be asynchronous and should not block the main thread.
+		Any API calls should update the database and return the updated data to the client.
+		The database should be able to handle multiple users on the same network. 
+		The frontend should use Phaser and connect to the backend via API calls.
+		The backend should use FastAPI.
+		Make sure that CORS issues are handled properly since everything will be running on a local network.
+
