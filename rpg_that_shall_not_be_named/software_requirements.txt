@@ -50,5 +50,5 @@ Based on the current functional state of the application, the following list def
 ## 7. Backend Data & Services (Django)
 - **REQ-7.1:** The backend must expose REST API endpoints for user entity administration (Auth token issuance, validation, and invalidation).
 - **REQ-7.2:** The backend must define a schema to securely store structured JSON blobs mapping to a user profile's exact game state upon save requests.
-- **REQ-7.3:** The backend must host a data-driven Monster Drop Table configuration mapping monsters to loot configurations (Item Names, Quantity, Weighted Probability Drop Rates).
+- **REQ-7.3:** The backend must host a data-driven Monster Drop Table configuration mapping monsters to loot configurations (Monster name, Item Names, Quantity, Weighted Probability (Drop Rates)).
 - **REQ-7.4:** The backend must compute drop logic server-side to prevent simple client-side manipulation of loot assignment.

@@ -9,6 +9,10 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
     getItem: jest.fn(),
 }));
 
+jest.mock('../utils/api', () => ({
+    apiCall: jest.fn()
+}));
+
 // We must wrap the hook in the provider
 const wrapper = ({ children }) => <GameProvider>{children}</GameProvider>;
 
@@ -97,28 +101,46 @@ describe('GameContext', () => {
         expect(result.current.unlockedCreatures.length).toBe(1);
     });
 
-    it('saves the game using AsyncStorage', async () => {
+    it('saves the game via backend apiCall (REQ-1.5)', async () => {
+        const { apiCall } = require('../utils/api');
+        apiCall.mockResolvedValueOnce({ status: 200, data: {} });
         const { result } = renderHook(() => useGame(), { wrapper });
-
-        // Simulate some state change
+        
+        // Setup auth state
         act(() => {
             result.current.gainXp(10);
         });
 
+        // We need auth token and character name to save
+        await act(async () => {
+            apiCall.mockResolvedValueOnce({ status: 200, data: { token: 'abc' } });
+            await result.current.loginOrRegister('u', 'p', true);
+            
+            apiCall.mockResolvedValueOnce({ status: 201, data: { name: 'Hero' } });
+            apiCall.mockResolvedValueOnce({ status: 200, data: { name: 'Hero' } }); // for loadGame after create
+            await result.current.createCharacter('Hero');
+        });
+
         let success;
         await act(async () => {
+            apiCall.mockResolvedValueOnce({ status: 200, data: {} });
             success = await result.current.saveGame();
         });
 
         expect(success).toBe(true);
-        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-            '@rpg_expo_save_v1',
-            expect.stringContaining('"xp":10')
+        expect(apiCall).toHaveBeenCalledWith(
+            '/character/state/',
+            'POST',
+            expect.objectContaining({ name: 'Hero' })
         );
     });
 
-    it('loads the game from AsyncStorage', async () => {
-        AsyncStorage.getItem.mockResolvedValueOnce(JSON.stringify({ xp: 100, currentStamina: 20, level: 2 }));
+    it('loads the game from backend apiCall (REQ-1.6)', async () => {
+        const { apiCall } = require('../utils/api');
+        apiCall.mockResolvedValueOnce({ status: 200, data: { 
+            name: 'Hero', xp: 100, currentStamina: 20, townLevel: 2 
+        }});
+        
         const { result } = renderHook(() => useGame(), { wrapper });
 
         let success;
@@ -129,6 +151,8 @@ describe('GameContext', () => {
         expect(success).toBe(true);
         expect(result.current.xp).toBe(100);
         expect(result.current.currentStamina).toBe(20);
+        expect(result.current.townLevel).toBe(2);
+        expect(result.current.characterName).toBe('Hero');
     });
 
     it('handles buyItem logic correctly', () => {

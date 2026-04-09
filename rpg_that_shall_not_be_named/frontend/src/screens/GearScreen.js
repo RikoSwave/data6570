@@ -82,31 +82,31 @@ const GearScreen = () => {
 
     return (
         <SafeAreaView style={styles.container}>
-
-            <View style={styles.statsPanel}>
-                <Text style={styles.panelTitle}>PLAYER STATS</Text>
-                <Text style={styles.coinText}>Coins: {coins}</Text>
-                <View style={styles.statsGrid}>
-                    <Text style={styles.statLine}>Accuracy: <Text style={styles.statValue}>{playerStats.accuracy}</Text></Text>
-                    <Text style={styles.statLine}>Max Hit: <Text style={styles.statValue}>{playerStats.maxHit}</Text></Text>
-                    <Text style={styles.statLine}>Defence: <Text style={styles.statValue}>{playerStats.defence}</Text></Text>
+            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 20 }}>
+                <View style={styles.statsPanel}>
+                    <Text style={styles.panelTitle}>PLAYER STATS</Text>
+                    <Text style={styles.coinText}>Coins: {coins}</Text>
+                    <View style={styles.statsGrid}>
+                        <Text style={styles.statLine}>Accuracy: <Text style={styles.statValue}>{playerStats.accuracy}</Text></Text>
+                        <Text style={styles.statLine}>Max Hit: <Text style={styles.statValue}>{playerStats.maxHit}</Text></Text>
+                        <Text style={styles.statLine}>Defence: <Text style={styles.statValue}>{playerStats.defence}</Text></Text>
+                    </View>
                 </View>
-            </View>
 
-            <Text style={styles.sectionHeader}>EQUIPPED GEAR</Text>
-            <View style={styles.equippedContainer}>
-                {GEAR_TYPES.map(slot => renderEquippedSlot(slot))}
-            </View>
+                <Text style={styles.sectionHeader}>EQUIPPED GEAR</Text>
+                <View style={styles.equippedContainer}>
+                    {GEAR_TYPES.map(slot => renderEquippedSlot(slot))}
+                </View>
 
-            <Text style={styles.sectionHeader}>INVENTORY ({inventory.length})</Text>
-            <FlatList
-                data={inventory}
-                renderItem={renderInventoryItem}
-                keyExtractor={(item) => item.id}
-                style={styles.inventoryList}
-                contentContainerStyle={{ paddingBottom: 20 }}
-                ListEmptyComponent={<Text style={styles.emptyList}>No items in inventory.</Text>}
-            />
+                <Text style={styles.sectionHeader}>INVENTORY ({inventory.length})</Text>
+                <View style={styles.inventoryList}>
+                    {inventory.length === 0 ? (
+                        <Text style={styles.emptyList}>No items in inventory.</Text>
+                    ) : (
+                        inventory.map(item => <React.Fragment key={item.id}>{renderInventoryItem({ item })}</React.Fragment>)
+                    )}
+                </View>
+            </ScrollView>
         </SafeAreaView>
     );
 };
