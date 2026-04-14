@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Use localhost for web, 10.0.2.2 for Android emulator, or your local IP for real device
 // We'll use localhost since the testing is requested on the web platform primarily.
-const BASE_URL = 'http://localhost:8000/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 export const apiCall = async (endpoint, method = 'GET', body = null) => {
     const token = await AsyncStorage.getItem('@auth_token');
@@ -10,7 +10,7 @@ export const apiCall = async (endpoint, method = 'GET', body = null) => {
     const headers = {
         'Content-Type': 'application/json',
     };
-    if (token) {
+    if (token && !endpoint.includes('/auth/login/') && !endpoint.includes('/auth/register/')) {
         headers['Authorization'] = `Token ${token}`;
     }
 

@@ -9,7 +9,7 @@ class Character(models.Model):
     xp = models.IntegerField(default=0)
     bossesDefeated = models.IntegerField(default=0)
     coins = models.IntegerField(default=0)
-    currentStamina = models.IntegerField(default=10)
+    currentStamina = models.IntegerField(default=15)
     townLevel = models.IntegerField(default=1)
     townXP = models.IntegerField(default=0)
     

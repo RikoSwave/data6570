@@ -43,7 +43,7 @@ export const GameProvider = ({ children }) => {
 
     const [coins, setCoins] = useState(0);
     const [activePotions, setActivePotions] = useState([]); // Array of potions
-    const [currentStamina, setCurrentStamina] = useState(10); // Current HP
+    const [currentStamina, setCurrentStamina] = useState(15); // Current HP
     const [unlockedCreatures, setUnlockedCreatures] = useState([]); // Array of IDs
     const [townLevel, setTownLevel] = useState(1);
     const [townXP, setTownXP] = useState(0);
@@ -213,7 +213,7 @@ export const GameProvider = ({ children }) => {
                 Weapon: null, Armor: null, Helmet: null, Legs: null, Shield: null, Boots: null, Gloves: null, Amulet: null, 'Magic Artifact': null
             });
             setCoins(data.coins || 0);
-            setCurrentStamina(data.currentStamina || 10);
+            setCurrentStamina(data.currentStamina || 15);
             setUnlockedCreatures(data.unlockedCreatures || []);
             setTownLevel(data.townLevel || 1);
             setTownXP(data.townXP || 0);
