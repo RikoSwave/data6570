@@ -14,9 +14,9 @@ drops = [
     {"monster_name": "Combat Dummy", "item_name": "nothing", "quantity": 0, "weight": 50},
     
     # Boss as used in Boss Fight
-    {"monster_name": "Boss", "item_name": "Boss Soul", "quantity": 1, "weight": 10},
+    {"monster_name": "Boss", "item_name": "Boss Soul", "quantity": 1, "weight": 40},
     {"monster_name": "Boss", "item_name": "Large Coin Pouch", "quantity": 1, "weight": 50},
-    {"monster_name": "Boss", "item_name": "nothing", "quantity": 0, "weight": 40},
+    {"monster_name": "Boss", "item_name": "nothing", "quantity": 0, "weight": 10},
     
     # Creatures
     {"monster_name": "Chicken", "item_name": "Feather", "quantity": 5, "weight": 50},

@@ -3,10 +3,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ProgressBarAndroid, ActivityIndicator, FlatList, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useGame } from '../context/GameContext';
-
-
-
-
 import { DUNGEON_TYPES } from '../utils/gameLogic';
 
 const ExploreDungeonScreen = () => {
@@ -156,8 +152,8 @@ const ExploreDungeonScreen = () => {
                         <Text style={styles.sectionTitle}>Use Health Potion:</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.potionScroll}>
                             {healthPotions.map(potion => (
-                                <TouchableOpacity 
-                                    key={potion.id} 
+                                <TouchableOpacity
+                                    key={potion.id}
                                     style={styles.potionButton}
                                     onPress={() => consumePotion(potion)}
                                 >
