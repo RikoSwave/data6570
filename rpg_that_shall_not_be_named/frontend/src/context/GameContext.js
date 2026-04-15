@@ -651,6 +651,7 @@ export const GameProvider = ({ children }) => {
             startQuest,
             updateQuestProgress,
             claimQuestReward,
+            donateItem,
             calculateTownXPForLevel,
             freeRestAvailable,
             setFreeRestAvailable

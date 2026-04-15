@@ -176,6 +176,19 @@ const TownScreen = () => {
         </View>
     );
 
+    const formatGearStats = (stats) => {
+        if (!stats) return '';
+        const parts = [];
+        if (stats.maxHitPercent) parts.push(`Str: +${stats.maxHitPercent}%`);
+        if (stats.accuracyPercent) parts.push(`Acc: +${stats.accuracyPercent}%`);
+        if (stats.maxHit > 0) parts.push(`Str: +${stats.maxHit}`);
+        if (stats.accuracy > 0) parts.push(`Acc: +${stats.accuracy}`);
+        if (stats.defence > 0) parts.push(`Def: +${stats.defence}`);
+        if (stats.stamina > 0) parts.push(`HP: +${stats.stamina}`);
+        if (stats.speedBonus > 0) parts.push(`Spd: +${stats.speedBonus}%`);
+        return parts.join(' | ');
+    };
+
     const renderShop = (type) => { // 'Blacksmith' or 'Potion'
         const stock = type === 'Blacksmith' ? (shopStock?.blacksmith || []) : (shopStock?.potion || []);
         const shopName = type === 'Blacksmith' ? "Blacksmith" : "Potion Shop";
@@ -216,7 +229,7 @@ const TownScreen = () => {
                                         {/* Simple stat summary */}
                                         {item.type === 'Potion'
                                             ? `${item.effectType} +${Math.round((item.multiplier - 1) * 100)}%`
-                                            : `Tier: ${Math.floor(item.value / 10)}` // Rough tier guess for display
+                                            : formatGearStats(item.stats)
                                         }
                                     </Text>
                                 </View>
