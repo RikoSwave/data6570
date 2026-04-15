@@ -18,7 +18,7 @@ const LoginScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>RPG Expo App</Text>
+            <Text style={styles.title}>S.W.O.R.D. - Settlement Watch: Outpost Realm Defense</Text>
             <Text style={styles.subtitle}>{isLogin ? 'Login' : 'Register'}</Text>
             
             <TextInput

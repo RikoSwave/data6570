@@ -10,8 +10,8 @@ MonsterDropTable.objects.all().delete()
 
 drops = [
     # Combat dummy as used in Train Combat
-    {"monster_name": "Combat Dummy", "item_name": "Wood Splinter", "quantity": 1, "weight": 50},
-    {"monster_name": "Combat Dummy", "item_name": "nothing", "quantity": 0, "weight": 50},
+    {"monster_name": "Combat Dummy", "item_name": "Wood Splinter", "quantity": 1, "weight": 10},
+    {"monster_name": "Combat Dummy", "item_name": "nothing", "quantity": 0, "weight": 90},
     
     # Boss as used in Boss Fight
     {"monster_name": "Boss", "item_name": "Boss Soul", "quantity": 1, "weight": 40},
@@ -26,8 +26,8 @@ drops = [
     {"monster_name": "Cow", "item_name": "Raw Beef", "quantity": 1, "weight": 50},
     
     {"monster_name": "Small Goblin", "item_name": "Goblin Mail", "quantity": 1, "weight": 10},
-    {"monster_name": "Small Goblin", "item_name": "Bones", "quantity": 3, "weight": 45},
-    {"monster_name": "Small Goblin", "item_name": "Bones", "quantity": 3, "weight": 45},
+    {"monster_name": "Small Goblin", "item_name": "Small Coin Pouch", "quantity": 1, "weight": 45},
+    {"monster_name": "Small Goblin", "item_name": "Bones", "quantity": 1, "weight": 45},
 
 ]
 

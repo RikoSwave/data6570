@@ -11,7 +11,7 @@ const TownScreen = () => {
         refreshShops, buyItem, sellItemToShop, restAtInn, completeInnRest,
         startQuest, updateQuestProgress, claimQuestReward, donateItem,
         inventory, coins, playerStats, calculateTownXPForLevel, xp, equipped,
-        currentStamina
+        currentStamina, freeRestAvailable
     } = useGame();
 
     const [view, setView] = useState('HUB'); // HUB, BLACKSMITH, POTION, INN, SQUARE
@@ -263,13 +263,13 @@ const TownScreen = () => {
                 <Text style={styles.descriptionText}>
                     Rest for a while to restore your strength.
                 </Text>
-                <Text style={styles.priceTag}>Cost: 10 Coins</Text>
+                <Text style={styles.priceTag}>Cost: {freeRestAvailable ? 'Free' : '10 Coins'}</Text>
 
                 {resting ? (
                     <Text style={styles.timerText}>Resting... {timeLeft}s</Text>
                 ) : (
                     <TouchableOpacity style={styles.actionButton} onPress={handleRest}>
-                        <Text style={styles.actionButtonText}>Rest (10s)</Text>
+                        <Text style={styles.actionButtonText}>{freeRestAvailable ? 'Free Rest (10s)' : 'Rest (10s)'}</Text>
                     </TouchableOpacity>
                 )}
             </View>

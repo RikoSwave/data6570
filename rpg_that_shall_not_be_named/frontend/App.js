@@ -52,6 +52,7 @@ const MainNavigator = () => {
       <Tab.Navigator
           screenOptions={({ route }) => ({
             headerShown: true,
+            headerTitle: "S.W.O.R.D. - Settlement Watch: Outpost Realm Defense",
             headerStyle: {
               backgroundColor: '#1a1a1a',
               borderBottomColor: '#333',

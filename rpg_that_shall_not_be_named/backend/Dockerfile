@@ -22,5 +22,6 @@ EXPOSE 8000
 # In production, migrations should typically be run separately,
 # but for simplicity in this setup, we'll run them here.
 CMD python manage.py migrate \
+    && python populate_drops.py \
     && python manage.py collectstatic --noinput \
     && gunicorn rpg_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3

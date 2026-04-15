@@ -58,10 +58,10 @@ const ExploreDungeonScreen = () => {
                 setLog(prev => [`Trapped! Took ${exploreResult.damage} damage.`, ...prev].slice(0, 15));
                 if (exploreResult.died) {
                     if (exploreResult.coinsLost > 0) {
-                        Alert.alert("Rescued!", `You collapsed in the dungeon! The village guard rescued you for ${exploreResult.coinsLost} coins.`);
+                        Alert.alert("Rescued!", `You collapsed in the dungeon! The village guard rescued you for ${exploreResult.coinsLost} coins.\n\nFinding it hard to complete a dungeon? Leveling up your character can improve your chances!`);
                         setLog(prev => [`Rescued by village guard for ${exploreResult.coinsLost} coins!`, ...prev].slice(0, 15));
                     } else {
-                        Alert.alert("Rescued!", "The village guard took pity on you and rescued you for free.");
+                        Alert.alert("Rescued!", "The village guard took pity on you and rescued you for free.\n\nFinding it hard to complete a dungeon? Leveling up your character can improve your chances!");
                         setLog(prev => [`Rescued by village guard for free!`, ...prev].slice(0, 15));
                     }
                     setIsExploring(false);
@@ -140,6 +140,12 @@ const ExploreDungeonScreen = () => {
                 {gearStats.speedBonus > 0 && (
                     <Text style={styles.bonusText}>Speed Bonus: -{gearStats.speedBonus}% Time</Text>
                 )}
+                <View style={styles.statsRow}>
+                    <Text style={styles.statLine}>Strength: {playerStats.maxHit} | </Text>
+                    <Text style={styles.statLine}>Accuracy: {playerStats.accuracy} | </Text>
+                    <Text style={styles.statLine}>Defense: {playerStats.defence} | </Text>
+                    <Text style={styles.statLine}>HP: {currentStamina}/{playerStats.stamina}</Text>
+                </View>
             </View>
 
             {renderDungeonSelector()}
@@ -210,6 +216,18 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         marginBottom: 10,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        marginTop: 5,
+        backgroundColor: '#113311',
+        padding: 5,
+        borderRadius: 5,
+    },
+    statLine: {
+        color: '#dfd',
+        fontSize: 12,
+        fontWeight: 'bold',
     },
     // ... existing styles ...
     selectorContainer: {

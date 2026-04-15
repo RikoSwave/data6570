@@ -19,6 +19,12 @@ describe('GearScreen', () => {
         expect(getByText('PLAYER STATS')).toBeTruthy();
         expect(getByText('EQUIPPED GEAR')).toBeTruthy();
         expect(getByText('INVENTORY (0)')).toBeTruthy();
+
+        // Assert that new stats formatting is shown
+        expect(getByText('Strength:')).toBeTruthy();
+        expect(getByText('Accuracy:')).toBeTruthy();
+        expect(getByText('Defense:')).toBeTruthy();
+        expect(getByText('HP:')).toBeTruthy();
     });
 
     it('displays empty slots for all gear types', () => {

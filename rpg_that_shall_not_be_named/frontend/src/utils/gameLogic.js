@@ -192,7 +192,7 @@ export const generateRandomGear = (level) => {
     baseStat = Math.max(1, baseStat);
 
     let stats = { accuracy: 0, maxHit: 0, defence: 0, stamina: 0 };
-    
+
     // Percent chance roll (only for Adamant or higher, which is tier 5+)
     const rollPercent = (tier >= 5) && (Math.random() < 0.33);
 
@@ -308,17 +308,17 @@ export const generatePotion = (dungeonType) => {
 
     if (tier === 'Good') {
         multiplier = 1.25; // +25%
-        healPercent = 0.50; 
+        healPercent = 0.50;
         value = 25; // Good sell value (Cost 50)
     }
     if (tier === 'Rare') {
         multiplier = 1.5; // +50%
-        healPercent = 0.75; 
+        healPercent = 0.75;
         value = 100; // Rare sell value (Cost 200)
     }
     if (tier === 'Legendary') {
         multiplier = 2.0; // +100%
-        healPercent = 1.0; 
+        healPercent = 1.0;
         value = 150; // Legendary sell value (obtained from 200 cost dungeon)
     }
 
@@ -339,11 +339,12 @@ export const calculateTownXPForLevel = (level) => {
 };
 
 export const TOWN_QUESTS = [
-    { id: 'q1', targetId: 'chicken', count: 5, name: 'Pest Control', description: 'Defeat 5 Chickens', rewardCoins: 50, rewardTownXP: 10 },
-    { id: 'q2', targetId: 'cow', count: 3, name: 'Beef Supply', description: 'Defeat 3 Cows', rewardCoins: 100, rewardTownXP: 25 },
-    { id: 'q3', targetId: 'goblin', count: 3, name: 'Goblin Trouble', description: 'Defeat 3 Small Goblins', rewardCoins: 200, rewardTownXP: 50 },
-    { id: 'q4', targetId: 'chicken', count: 10, name: 'Obsessive Hunter', description: 'Defeat 10 Chickens', rewardCoins: 150, rewardTownXP: 20 },
-    { id: 'q5', targetId: 'cow', count: 10, name: 'Steak Dinner', description: 'Defeat 10 Cows', rewardCoins: 400, rewardTownXP: 60 },
+    { id: 'q1', targetId: 'chicken', count: 5, name: 'Pest Control', description: 'Defeat 5 Chickens', rewardCoins: 10, rewardTownXP: 5 },
+    { id: 'q2', targetId: 'cow', count: 3, name: 'Beef Supply', description: 'Defeat 3 Cows', rewardCoins: 10, rewardTownXP: 10 },
+    { id: 'q3', targetId: 'goblin', count: 3, name: 'Goblin Trouble', description: 'Defeat 3 Small Goblins', rewardCoins: 15, rewardTownXP: 25 },
+    { id: 'q4', targetId: 'chicken', count: 10, name: 'Obsessive Hunter', description: 'Defeat 10 Chickens', rewardCoins: 10, rewardTownXP: 20 },
+    { id: 'q5', targetId: 'cow', count: 10, name: 'Steak Dinner', description: 'Defeat 10 Cows', rewardCoins: 20, rewardTownXP: 10 },
+    { id: 'q6', targetId: 'goblin', count: 10, name: 'Goblin Slayer', description: 'Defeat 10 Small Goblins', rewardCoins: 25, rewardTownXP: 25 },
 ];
 
 export const generateQuest = (townLevel) => {
@@ -389,7 +390,7 @@ export const generateShopItems = (townLevel, shopType) => {
 export const getTownLevelBonuses = (level) => {
     const bonuses = [];
     if (level === 2) {
-        bonuses.push('Unlocks Inn (+10 HP)');
+        bonuses.push('Upgrades Inn (+10 HP)');
         bonuses.push('Expands Shop Stock');
     } else if (level === 3) {
         bonuses.push('Unlocks Good Potions');
@@ -403,5 +404,6 @@ export const getTownLevelBonuses = (level) => {
     } else {
         bonuses.push('More items added to Town Shops');
     }
+    bonuses.push('Slightly increase Dungeon exploration success chance.');
     return bonuses;
 };

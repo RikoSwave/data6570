@@ -29,6 +29,16 @@ describe('ExploreDungeonScreen', () => {
         expect(getByText('DUNGEON')).toBeTruthy();
         expect(getByText('SELECT DUNGEON:')).toBeTruthy();
         expect(getByText('Find equipment and weapons to boost your stats.')).toBeTruthy();
+        
+        // Assert new stats row is rendered (from GameContext default values)
+        // Strength, Accuracy, Defense, HP
+        // Wait, the GameProvider actually initializes `playerStats`. 
+        // We can just verify the labels exist.
+        expect(queryByText(/Strength: /)).toBeTruthy();
+        expect(queryByText(/Accuracy: /)).toBeTruthy();
+        expect(queryByText(/Defense: /)).toBeTruthy();
+        expect(queryByText(/HP: /)).toBeTruthy();
+
         expect(queryByText(/Ready to explore/i)).toBeTruthy();
         expect(getByText('EXPLORE (15s)')).toBeTruthy();
     });
@@ -51,8 +61,8 @@ describe('ExploreDungeonScreen', () => {
         expect(getByText(/Ready to explore/i)).toBeTruthy();
     });
 
-    it('explores gear dungeon for free successfully', () => {
-        const { getByText, queryByText } = render(<ExploreDungeonScreen />, { wrapper });
+    it('explores gear dungeon for free successfully', async () => {
+        const { getByText, queryByText, findByText } = render(<ExploreDungeonScreen />, { wrapper });
 
         fireEvent.press(getByText('Gear (Free)'));
         fireEvent.press(getByText('EXPLORE (15s)'));
@@ -67,6 +77,6 @@ describe('ExploreDungeonScreen', () => {
         });
 
         // After completion, we should see Found message in log
-        expect(getByText(/Found:/i)).toBeTruthy();
+        expect(await findByText(/Found/i)).toBeTruthy();
     });
 });

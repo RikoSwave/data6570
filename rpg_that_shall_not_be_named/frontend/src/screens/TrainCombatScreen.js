@@ -6,7 +6,7 @@ import { useGame } from '../context/GameContext';
 import { CREATURES } from '../utils/gameLogic';
 
 const TrainCombatScreen = () => {
-    const { xp, level, trainCombat, xpToNextLevel, levelProgress, playerStats, currentStamina, healPlayer, takeDamage, gainXp, lootMonsterDrop, unlockCreature, unlockedCreatures, updateQuestProgress, inventory, consumePotion, activePotions } = useGame();
+    const { xp, level, trainCombat, xpToNextLevel, levelProgress, playerStats, currentStamina, healPlayer, takeDamage, gainXp, lootMonsterDrop, unlockCreature, unlockedCreatures, updateQuestProgress, inventory, consumePotion, activePotions, setFreeRestAvailable, characterName } = useGame();
     const [lastGain, setLastGain] = useState(0);
 
     const availablePotions = useMemo(() => {
@@ -71,6 +71,10 @@ const TrainCombatScreen = () => {
     const enemyHPRef = useRef(0); // Ref to track HP inside interval
 
     const handleDummyTrain = () => {
+        if (currentStamina <= 0) {
+            Alert.alert("You feel weak!", "You need stamina to hit the dummy.");
+            return;
+        }
         if (combatActive) return; // Cannot train dummy while fighting
         const gain = trainCombat();
         setLastGain(gain);
@@ -176,6 +180,7 @@ const TrainCombatScreen = () => {
         if (!combatActive) return;
 
         if (currentStamina <= 0) {
+            setFreeRestAvailable(true);
             stopCombat();
             setCombatFinished(true);
             setCombatLog(prev => [`DEFEAT! You ran out of stamina.`, ...prev].slice(0, 15));
@@ -199,7 +204,7 @@ const TrainCombatScreen = () => {
             stopCombat();
             setCombatFinished(true);
             setCombatLog(prev => [`VICTORY! +${xpGainAmount} XP`, `Defeated ${selectedCreature.name}!`, ...prev].slice(0, 15));
-            
+
             lootMonsterDrop(selectedCreature.name).then(drop => {
                 if (drop) {
                     setCombatLog(prev => [`Received ${drop.quantity}x ${drop.name}`, ...prev].slice(0, 15));
@@ -217,32 +222,35 @@ const TrainCombatScreen = () => {
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Add potions section */}
-            {availablePotions.length > 0 && (
-                <View style={styles.potionContainer}>
-                    <Text style={styles.sectionTitle}>Use Potion:</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.potionScroll}>
-                        {availablePotions.map(potion => (
-                            <TouchableOpacity 
-                                key={potion.id} 
-                                style={styles.potionButton}
-                                onPress={() => consumePotion(potion)}
-                            >
-                                <Text style={styles.potionText}>{potion.name}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
-            )}
+                {availablePotions.length > 0 && (
+                    <View style={styles.potionContainer}>
+                        <Text style={styles.sectionTitle}>Use Potion:</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.potionScroll}>
+                            {availablePotions.map(potion => (
+                                <TouchableOpacity
+                                    key={potion.id}
+                                    style={styles.potionButton}
+                                    onPress={() => consumePotion(potion)}
+                                >
+                                    <Text style={styles.potionText}>{potion.name}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
 
-            <View style={styles.creatureListContainer}>
-                    <Text style={styles.levelText}>Level: {level}</Text>
+                <View style={styles.creatureListContainer}>
+                    <Text style={styles.levelText}>{characterName}, Level: {level}</Text>
 
                     {/* Core Stats Overview */}
                     <View style={styles.coreStatsRow}>
                         {renderStatValue("Strength", playerStats.maxHit, "maxHit")}
                         {renderStatValue("Accuracy", playerStats.accuracy, "accuracy")}
-                        {renderStatValue("Defence", playerStats.defence, "defence")}
-                        {renderStatValue("Max HP", playerStats.stamina, "stamina")}
+                        {renderStatValue("Defense", playerStats.defence, "defence")}
+                        <View style={styles.statBox}>
+                            <Text style={styles.statBoxLabel}>HP</Text>
+                            <Text style={styles.statBoxValue}>{currentStamina}/{playerStats.stamina}</Text>
+                        </View>
                     </View>
 
                     {/* Stamina Bar */}

@@ -20,7 +20,7 @@ const getStatsString = (stats) => {
 };
 
 const GearScreen = () => {
-    const { equipped, inventory, equipGear, unequipGear, playerStats, coins, consumePotion } = useGame();
+    const { equipped, inventory, equipGear, unequipGear, playerStats, coins, consumePotion, currentStamina } = useGame();
 
     const renderEquippedSlot = (slot) => {
         const item = equipped[slot];
@@ -87,9 +87,10 @@ const GearScreen = () => {
                     <Text style={styles.panelTitle}>PLAYER STATS</Text>
                     <Text style={styles.coinText}>Coins: {coins}</Text>
                     <View style={styles.statsGrid}>
+                        <Text style={styles.statLine}>Strength: <Text style={styles.statValue}>{playerStats.maxHit}</Text></Text>
                         <Text style={styles.statLine}>Accuracy: <Text style={styles.statValue}>{playerStats.accuracy}</Text></Text>
-                        <Text style={styles.statLine}>Max Hit: <Text style={styles.statValue}>{playerStats.maxHit}</Text></Text>
-                        <Text style={styles.statLine}>Defence: <Text style={styles.statValue}>{playerStats.defence}</Text></Text>
+                        <Text style={styles.statLine}>Defense: <Text style={styles.statValue}>{playerStats.defence}</Text></Text>
+                        <Text style={styles.statLine}>HP: <Text style={styles.statValue}>{currentStamina}/{playerStats.stamina}</Text></Text>
                     </View>
                 </View>
 
