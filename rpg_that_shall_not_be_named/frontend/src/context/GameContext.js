@@ -72,11 +72,13 @@ export const GameProvider = ({ children }) => {
 
     // Calculate Stats
     const gearStats = useMemo(() => {
-        let totalStats = { accuracy: 0, maxHit: 0, defence: 0, speedBonus: 0, stamina: 0 };
+        let totalStats = { accuracy: 0, accuracyPercent: 0, maxHit: 0, maxHitPercent: 0, defence: 0, speedBonus: 0, stamina: 0 };
         Object.values(equipped).forEach(item => {
             if (item) {
                 totalStats.accuracy += item.stats.accuracy || 0;
+                totalStats.accuracyPercent += item.stats.accuracyPercent || 0;
                 totalStats.maxHit += item.stats.maxHit || 0;
+                totalStats.maxHitPercent += item.stats.maxHitPercent || 0;
                 totalStats.defence += item.stats.defence || 0;
                 totalStats.speedBonus += item.stats.speedBonus || 0;
                 totalStats.stamina += item.stats.stamina || 0;
