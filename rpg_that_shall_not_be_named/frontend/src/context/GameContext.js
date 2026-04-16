@@ -441,91 +441,140 @@ export const GameProvider = ({ children }) => {
     };
 
     // Modified Logic with Inventory Limits
-    const runBossFight = () => {
-        const fightLogic = challengeBoss(playerStats);
+    const runBossFight = (pendingDungeonReward = null) => {
+        const fightLogic = challengeBoss(playerStats, pendingDungeonReward?.dungeonKey);
         const success = fightLogic(bossesDefeated);
+        
+        let bossDrops = [];
+
         if (success) {
             setBossesDefeated(prev => prev + 1);
-            apiCall('/combat/drop/?monster=Boss', 'GET').then(dropRes => {
+            
+            // 1. Get Boss Drop
+            apiCall(`/combat/drop/?monster=Boss`, 'GET').then(async dropRes => {
                 if (dropRes.status === 200 && dropRes.data.drop) {
-                    const drop = dropRes.data.drop;
-                    setInventory(prev => {
-                        const existing = prev.find(i => i.name === drop.name);
-                        if (existing) {
-                            return prev.map(i => i.name === drop.name ? { ...i, quantity: (i.quantity || 1) + drop.quantity } : i);
-                        } else if (prev.length < 10) {
-                            return [...prev, { id: Date.now().toString(), name: drop.name, type: 'Resource', value: 20, quantity: drop.quantity }];
+                    let drop = dropRes.data.drop;
+
+                    // If it hits the "boss_unique" drop, roll specifically for this boss
+                    if (drop.name === 'boss_unique' && pendingDungeonReward?.dungeonKey) {
+                        const bossName = DUNGEON_TYPES[pendingDungeonReward.dungeonKey].bossName;
+                        const uniqueRes = await apiCall(`/combat/drop/?monster=${encodeURIComponent(bossName)}`, 'GET');
+                        if (uniqueRes.status === 200 && uniqueRes.data.drop) {
+                            drop = uniqueRes.data.drop;
                         }
-                        return prev;
-                    });
+                    }
+
+                    if (drop.name !== 'nothing' && drop.name !== 'boss_unique') {
+                        const item = { 
+                            id: Date.now().toString() + '_boss', 
+                            name: drop.name, 
+                            type: 'Resource', 
+                            value: 50, 
+                            quantity: drop.quantity 
+                        };
+                        setInventory(prev => {
+                            if (prev.length < 10) return [...prev, item];
+                            return prev;
+                        });
+                        bossDrops.push(item);
+                    }
                 }
             });
+
+            // 2. Additional Dungeon Reward (if provided)
+            if (pendingDungeonReward) {
+                const secondReward = generateDungeonReward(pendingDungeonReward.type, pendingDungeonReward.dungeonKey);
+                setInventory(prev => {
+                    if (prev.length < 10) return [...prev, secondReward];
+                    return prev;
+                });
+                setCoins(prev => prev + (pendingDungeonReward.coins || 0));
+            }
         }
-        // Consume potions
+        
         if (activePotions.length > 0) {
             setActivePotions([]);
         }
-        return success;
+        return { success, drops: bossDrops };
     };
 
-    const exploreDungeon = async (dungeonType) => {
-        // Implement risk check
-        const difficultyPenalties = {
-            'Basic': 10,
-            'Good': 30,
-            'Rare': 50,
-            'Legendary': 70,
-            'Basic Potions': 10,
-            'Good Potions': 30,
-            'Rare Potions': 50,
-            'Legendary Potions': 70
+    const generateDungeonReward = (rewardType, dungeonKey) => {
+        const config = DUNGEON_TYPES[dungeonKey].rewardConfig;
+        if (rewardType === 'Potion') {
+            return generatePotion(config.potionTier);
+        } else {
+            const tier = rollTier(config.gearTiers);
+            return generateRandomGear(combatLevel, tier);
+        }
+    };
+
+    const exploreDungeon = async (dungeonKey) => {
+        const dungeon = DUNGEON_TYPES[dungeonKey];
+        if (!dungeon) return { success: false, reason: 'invalid_dungeon' };
+
+        // 1. Calculate Success Rate
+        const totalSuccessRate = dungeon.baseSuccessRate + (level * dungeon.plFactor) + (townLevel * dungeon.tlFactor);
+        
+        // 2. Roll for Traps (Simulated for the final result)
+        // p^2 = 1 - S -> p = sqrt(1-S)
+        const sDecimal = Math.max(0, Math.min(100, totalSuccessRate)) / 100;
+        const trapChancePerEncounter = Math.sqrt(1 - sDecimal) * 100;
+        
+        let trapsHit = 0;
+        const results = [];
+
+        // Encounter 1
+        if (Math.random() * 100 < trapChancePerEncounter) {
+            trapsHit++;
+            const baseDamage = Math.floor(playerStats.stamina * 0.2) + 5;
+            const damage = Math.floor(baseDamage * 0.5); // "half of the amount that the player currently takes"
+            takeDamage(damage);
+            results.push({ type: 'trap', count: 1, damage });
+            if (currentStamina - damage <= 0) {
+                return { success: false, reason: 'died', trapsHit: 1, results };
+            }
+        }
+
+        // Encounter 2
+        if (Math.random() * 100 < trapChancePerEncounter) {
+            trapsHit++;
+            const damage = Math.floor(playerStats.stamina * 0.2) + 5;
+            takeDamage(damage);
+            results.push({ type: 'trap', count: 2, damage });
+            // Failure!
+            return { success: false, reason: 'trap_fail', trapsHit: 2, results };
+        }
+
+        // 3. Generate Rewards (Pending)
+        const config = dungeon.rewardConfig;
+        const coinsFound = Math.floor(Math.random() * (config.coins[1] - config.coins[0] + 1)) + config.coins[0];
+        
+        // Loot Chance Scaling: base + PL*0.5 + TL*1.0
+        const totalLootChance = config.lootChance + (level * 0.5) + (townLevel * 1.0);
+        let rewardItem = null;
+        if (Math.random() * 100 < totalLootChance) {
+            const rewardType = rollFromWeights(config.lootWeights);
+            rewardItem = generateDungeonReward(rewardType === 'potion' ? 'Potion' : 'Gear', dungeonKey);
+        }
+
+        return { 
+            success: true, 
+            coins: coinsFound, 
+            reward: rewardItem, 
+            trapsHit, 
+            results,
+            dungeonKey 
         };
-        const penalty = difficultyPenalties[dungeonType] || 10;
-        
-        const successChance = Math.min(95, 50 + (level + townLevel * 2) - penalty);
-        const roll = Math.random() * 100;
-        const isSuccess = roll <= successChance;
+    };
 
-        if (!isSuccess) {
-            // Trap triggered
-            const trapDamage = Math.floor(playerStats.stamina * 0.2) + 5;
-            let died = false;
-            let finalStamina = currentStamina - trapDamage;
-            let coinsLost = 0;
-            
-            if (finalStamina <= 0) {
-                died = true;
-                const penaltyCost = 25 + (bossesDefeated * 25);
-                coinsLost = Math.min(coins, penaltyCost);
-                setCoins(prev => Math.max(0, prev - penaltyCost));
-                finalStamina = 1 + coinsLost;
-            }
-            
-            if (died) {
-                setCurrentStamina(finalStamina);
-            } else {
-                takeDamage(trapDamage);
-            }
-            return { success: false, reason: 'trap', damage: trapDamage, died, coinsLost };
-        }
-
-        // Generate Item
-        let item;
-        let isPotion = dungeonType.includes('POTION');
-
-        if (isPotion) {
-            item = generatePotion(dungeonType);
-        } else {
-            const playerLevelForGear = combatLevel;
-            item = generateRandomGear(playerLevelForGear);
-        }
-        
-        // Add to inventory if space
-        if (inventory.length < 10) {
-            setInventory(prev => [...prev, item]);
-            return { success: true, reward: item };
-        } else {
-            return { success: false, reason: 'inventory_full' };
+    const claimDungeonRewards = (reward) => {
+        if (!reward) return;
+        if (reward.coins) setCoins(prev => prev + reward.coins);
+        if (reward.reward) {
+            setInventory(prev => {
+                if (prev.length < 10) return [...prev, reward.reward];
+                return prev;
+            });
         }
     };
 
@@ -608,6 +657,7 @@ export const GameProvider = ({ children }) => {
             trainCombat,
             runBossFight,
             exploreDungeon,
+            claimDungeonRewards,
             equipGear,
             unequipGear,
             sellItem,

@@ -90,18 +90,32 @@ export const CREATURES = [
     { id: 'goblin', name: 'Small Goblin', stamina: 50, defence: 5, maxHit: 4, xp: 30 }
 ];
 
-export const getBossStats = (bossesDefeated) => {
-    return {
+export const getBossStats = (bossesDefeated, dungeonKey = null) => {
+    const baseStats = {
         hp: 50 + ((bossesDefeated) ^ 2 * 50),
         defence: 10 + ((bossesDefeated) ^ 2 * 5),
         maxHit: 5 + ((bossesDefeated) ^ 2 * 2),
         accuracy: 10 + ((bossesDefeated) ^ 2 * 5)
     };
+
+    // Scaling by dungeon?
+    if (dungeonKey === 'THIEVES_DEN') {
+        baseStats.hp *= 1.5;
+        baseStats.maxHit += 2;
+    } else if (dungeonKey === 'CORRUPT_KING_VAULT') {
+        baseStats.hp *= 2.5;
+        baseStats.maxHit += 5;
+    } else if (dungeonKey === 'DRAGONS_HOARD') {
+        baseStats.hp *= 5;
+        baseStats.maxHit += 15;
+    }
+
+    return baseStats;
 };
 
-export const challengeBoss = (playerStats) => {
+export const challengeBoss = (playerStats, dungeonKey = null) => {
     return (bossesDefeated) => {
-        const bossStats = getBossStats(bossesDefeated);
+        const bossStats = getBossStats(bossesDefeated, dungeonKey);
         const bossHP = bossStats.hp;
         const bossDefence = bossStats.defence;
         const bossDamage = bossStats.maxHit;
@@ -132,7 +146,7 @@ export const challengeBoss = (playerStats) => {
 // Gear Logic
 export const GEAR_TYPES = ['Weapon', 'Armor', 'Helmet', 'Legs', 'Boots', 'Gloves', 'Amulet', 'Magic Artifact', 'Shield'];
 
-const GEAR_PREFIXES = ['Broken', 'Rusty', 'Iron', 'Steel', 'Mithril', 'Adamant', 'Rune', 'Dragon'];
+const GEAR_PREFIXES = ['Broken', 'Rusty', 'Iron', 'Steel', 'Mithril', 'Adamant', 'Rune', 'Dragon', 'Obsidian', 'Godly'];
 
 // Map internal types to display names or categories if needed
 // We will generate items with a 'type' that matches GEAR_TYPES
@@ -282,51 +296,256 @@ export const POTION_TYPES = ['Accuracy', 'Strength', 'Defence', 'Health'];
 export const POTION_TIERS = ['Basic', 'Good', 'Rare', 'Legendary'];
 
 export const DUNGEON_TYPES = {
-    GEAR: { name: 'Gear Dungeon', cost: 0, time: 15, type: 'gear', description: 'Find equipment and weapons to boost your stats.' },
-    BASIC_POTION: { name: 'Basic Potion Dungeon', cost: 10, time: 30, type: 'potion', tier: 'Basic', description: 'Acquire basic potions for temporary buffs.' },
-    GOOD_POTION: { name: 'Good Potion Dungeon', cost: 50, time: 30, type: 'potion', tier: 'Good', description: 'Find stronger potions with better effects.' },
-    RARE_POTION: { name: 'Rare Potion Dungeon', cost: 200, time: 30, type: 'potion', tier: 'Rare', description: 'Hunt for the most powerful potions in the land.' },
+    GOBLINS_HIDEOUT: { 
+        name: "Goblin's Hideout", 
+        time: 15, 
+        baseSuccessRate: 75, 
+        plFactor: 2, 
+        tlFactor: 4,
+        bossName: "Goblin King",
+        rewardConfig: {
+            coins: [5, 20],
+            lootChance: 60,
+            lootWeights: { potion: 25, gear: 75 },
+            potionTier: 'Basic',
+            gearTiers: [
+                { tier: 1, weight: 70 },
+                { tier: 2, weight: 25 },
+                { tier: 3, weight: 5 }
+            ]
+        },
+        description: 'A damp cave filled with weak goblins. Low risk, moderate reward.'
+    },
+    THIEVES_DEN: { 
+        name: "Thieve's Den", 
+        time: 60, 
+        baseSuccessRate: 40, 
+        plFactor: 1, 
+        tlFactor: 2,
+        bossName: "Queen of Thieves",
+        rewardConfig: {
+            coins: [25, 50],
+            lootChance: 50,
+            lootWeights: { potion: 25, gear: 75 },
+            potionTier: 'Good',
+            gearTiers: [
+                { tier: 2, weight: 40 },
+                { tier: 3, weight: 40 },
+                { tier: 4, weight: 15 },
+                { tier: 5, weight: 5 }
+            ]
+        },
+        description: 'A hidden cellar of cutthroats. Dangerous but lucrative.'
+    },
+    CORRUPT_KING_VAULT: { 
+        name: "Corrupt King's Vault", 
+        time: 150, 
+        baseSuccessRate: 0, 
+        plFactor: 1, 
+        tlFactor: 2,
+        bossName: "King's lockbox",
+        rewardConfig: {
+            coins: [75, 150],
+            lootChance: 40,
+            lootWeights: { potion: 25, gear: 75 },
+            potionTier: 'Rare',
+            gearTiers: [
+                { tier: 4, weight: 40 },
+                { tier: 5, weight: 40 },
+                { tier: 6, weight: 15 },
+                { tier: 7, weight: 5 }
+            ]
+        },
+        description: "The King's private treasury. Extremely well guarded."
+    },
+    DRAGONS_HOARD: { 
+        name: "Dragon's Hoard", 
+        time: 300, 
+        baseSuccessRate: -50, 
+        plFactor: 1, 
+        tlFactor: 2,
+        bossName: "Dragon Boss",
+        rewardConfig: {
+            coins: [200, 500],
+            lootChance: 35,
+            lootWeights: { potion: 25, gear: 75 },
+            potionTier: 'Legendary',
+            gearTiers: [
+                { tier: 6, weight: 50 },
+                { tier: 7, weight: 40 },
+                { tier: 8, weight: 10 }
+            ]
+        },
+        description: 'Legendary treasure guarded by an ancient dragon. Few return.'
+    }
 };
 
-export const generatePotion = (dungeonType) => {
-    // Determine Potion Tier based on dungeon
-    let possibleTiers = [];
-    if (dungeonType === 'BASIC_POTION') possibleTiers = ['Basic', 'Good'];
-    if (dungeonType === 'GOOD_POTION') possibleTiers = ['Good', 'Rare'];
-    if (dungeonType === 'RARE_POTION') possibleTiers = ['Rare', 'Legendary'];
+/**
+ * Generates an item from a weight-based distribution
+ */
+export const rollFromWeights = (weightMap) => {
+    const totalWeight = Object.values(weightMap).reduce((a, b) => a + b, 0);
+    let random = Math.random() * totalWeight;
+    for (const [key, weight] of Object.entries(weightMap)) {
+        if (random < weight) return key;
+        random -= weight;
+    }
+    return Object.keys(weightMap)[0];
+};
 
-    // Weighted random for better tier?
-    // Let's say 20% chance for the higher tier
-    const isHigher = Math.random() < 0.2;
-    const tier = isHigher ? possibleTiers[1] : possibleTiers[0];
+/**
+ * Generates a tier from a list of {tier, weight}
+ */
+export const rollTier = (tierConfig) => {
+    const totalWeight = tierConfig.reduce((acc, curr) => acc + curr.weight, 0);
+    let random = Math.random() * totalWeight;
+    for (const config of tierConfig) {
+        if (random < config.weight) return config.tier;
+        random -= config.weight;
+    }
+    return tierConfig[0].tier;
+};
+
+export const generateRandomGear = (level, tierOverride = null) => {
+    // Rarity Check: 10% chance for Amulet/Artifact
+    const isRare = Math.random() < 0.1;
+    // Lucky Check: 1% chance (very rare)
+    const isLucky = Math.random() < 0.01;
+
+    // Select Slot
+    let slotData;
+    if (isRare) {
+        slotData = RARE_SLOT_MAP[Math.floor(Math.random() * RARE_SLOT_MAP.length)];
+    } else {
+        slotData = GEAR_SLOT_MAP[Math.floor(Math.random() * GEAR_SLOT_MAP.length)];
+    }
+
+    // Determine Tier
+    const tierRaw = tierOverride !== null ? tierOverride : Math.floor(Math.random() * (level / 5)) + Math.floor(Math.random() * 2);
+    const tier = Math.min(GEAR_PREFIXES.length - 1, Math.max(0, tierRaw));
+    const prefix = GEAR_PREFIXES[tier];
+
+    let baseVal = (tier + 1) * 5;
+
+    // Rare items are more powerful
+    if (isRare) {
+        baseVal = Math.floor(baseVal * 1.5);
+    }
+
+    // Stat Randomization
+    let variance = isLucky ? 0.2 : (Math.random() * 0.4) - 0.2;
+    let baseStat = Math.max(1, Math.floor(baseVal * (1 + variance)));
+
+    let stats = { accuracy: 0, maxHit: 0, defence: 0, stamina: 0 };
+    const rollPercent = (tier >= 5) && (Math.random() < 0.33);
+
+    switch (slotData.type) {
+        case 'Weapon':
+            if (rollPercent) {
+                stats.accuracyPercent = Math.max(5, (tier + 1) * 3);
+                stats.maxHitPercent = Math.max(5, (tier + 1) * 3);
+            } else {
+                stats.accuracy = Math.floor(baseStat / 1.5);
+                stats.maxHit = Math.floor(baseStat / 1.5);
+            }
+            break;
+        case 'Armor':
+            stats.defence = baseStat;
+            stats.stamina = Math.floor(baseStat / 2);
+            break;
+        case 'Legs':
+            stats.defence = baseStat;
+            stats.stamina = Math.floor(baseStat / 3);
+            break;
+        case 'Helmet':
+            stats.defence = Math.floor(baseStat * 0.8);
+            stats.accuracy = Math.floor(baseStat * 0.2);
+            break;
+        case 'Boots':
+            stats.defence = Math.floor(baseStat / 2);
+            stats.maxHit = Math.floor(baseStat / 3);
+            break;
+        case 'Gloves':
+            stats.accuracy = Math.floor(baseStat / 3);
+            stats.maxHit = Math.floor(baseStat / 3);
+            stats.defence = Math.floor(baseStat / 3);
+            break;
+        case 'Shield':
+            stats.defence = baseStat;
+            stats.stamina = Math.floor(baseStat / 2);
+            if (tier >= 4) stats.maxHit = Math.floor(baseStat / 4);
+            break;
+        case 'Amulet':
+            if (rollPercent) {
+                stats.accuracyPercent = Math.max(5, (tier + 1) * 5);
+            } else {
+                stats.accuracy = Math.floor(baseStat * 0.8);
+                stats.defence = Math.floor(baseStat * 0.3);
+                stats.maxHit = Math.floor(baseStat * 0.5);
+            }
+            break;
+        case 'Magic Artifact':
+            if (rollPercent) {
+                stats.maxHitPercent = Math.max(5, (tier + 1) * 5);
+                stats.speedBonus = (tier + 1) * 2;
+            } else {
+                stats.maxHit = Math.floor(baseStat * 0.8);
+                stats.accuracy = Math.floor(baseStat * 0.5);
+                stats.stamina = Math.floor(baseStat * 0.2);
+                stats.speedBonus = (tier + 1) * 2;
+            }
+            break;
+    }
+
+    let finalName = `${prefix} ${slotData.name}`;
+    if (isLucky) {
+        finalName = `Lucky ${finalName}`;
+        const luckyBonus = Math.max(2, Math.floor(baseVal * 0.3));
+        stats.accuracy = (stats.accuracy || 0) + luckyBonus;
+        stats.maxHit = (stats.maxHit || 0) + luckyBonus;
+    }
+
+    return {
+        id: Math.random().toString(36).substr(2, 9),
+        name: finalName,
+        type: slotData.type,
+        stats,
+        value: Math.floor((tier + 1) * (isRare ? 50 : 10) * (isLucky ? 5 : 1) / 2)
+    };
+};
+
+export const generatePotion = (tierOrDungeon) => {
+    let tier = tierOrDungeon;
+    // Handle old calls that passed dungeon key
+    if (tierOrDungeon === 'BASIC_POTION') tier = 'Basic';
+    if (tierOrDungeon === 'GOOD_POTION') tier = 'Good';
+    if (tierOrDungeon === 'RARE_POTION') tier = 'Rare';
 
     const type = POTION_TYPES[Math.floor(Math.random() * POTION_TYPES.length)];
 
-    let multiplier = 1.1; // Basic = +10%
-    let healPercent = 0.25; // 25% max HP heal
-    let value = 5; // Basic sell value (Cost 10)
+    let multiplier = 1.1;
+    let healPercent = 0.25;
+    let value = 5;
 
     if (tier === 'Good') {
-        multiplier = 1.25; // +25%
+        multiplier = 1.25;
         healPercent = 0.50; 
-        value = 25; // Good sell value (Cost 50)
-    }
-    if (tier === 'Rare') {
-        multiplier = 1.5; // +50%
+        value = 25;
+    } else if (tier === 'Rare') {
+        multiplier = 1.5;
         healPercent = 0.75; 
-        value = 100; // Rare sell value (Cost 200)
-    }
-    if (tier === 'Legendary') {
-        multiplier = 2.0; // +100%
+        value = 100;
+    } else if (tier === 'Legendary') {
+        multiplier = 2.0;
         healPercent = 1.0; 
-        value = 150; // Legendary sell value (obtained from 200 cost dungeon)
+        value = 150;
     }
 
     return {
         id: Math.random().toString(36).substr(2, 9),
         name: `${tier} ${type} Potion`,
         type: 'Potion',
-        effectType: type, // 'Accuracy', 'Strength', 'Defence', 'Health'
+        effectType: type,
         multiplier: type === 'Health' ? 1 : multiplier,
         healPercent: type === 'Health' ? healPercent : 0,
         value: value
