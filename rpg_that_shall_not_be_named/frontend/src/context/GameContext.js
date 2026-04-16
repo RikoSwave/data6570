@@ -45,6 +45,7 @@ export const GameProvider = ({ children }) => {
     const [activePotions, setActivePotions] = useState([]); // Array of potions
     const [currentStamina, setCurrentStamina] = useState(15); // Current HP
     const [unlockedCreatures, setUnlockedCreatures] = useState([]); // Array of IDs
+    const [freeRestAvailable, setFreeRestAvailable] = useState(false);
     const [townLevel, setTownLevel] = useState(1);
     const [townXP, setTownXP] = useState(0);
     const [activeQuest, setActiveQuest] = useState(null);
@@ -358,10 +359,14 @@ export const GameProvider = ({ children }) => {
     const restAtInn = async () => {
         const cost = 10;
         if (coins < cost) {
-            if (currentStamina <= playerStats.stamina * 0.05) {
+            if (currentStamina <= playerStats.stamina * 0.05 || freeRestAvailable) {
                 return 'free';
             }
             return false;
+        }
+
+        if (freeRestAvailable) {
+            return 'free';
         }
 
         setCoins(prev => prev - cost);
@@ -372,8 +377,10 @@ export const GameProvider = ({ children }) => {
     const completeInnRest = (resultType) => {
         if (resultType === 'free') {
             healPlayer(Math.floor(playerStats.stamina * 0.5));
+            setFreeRestAvailable(false);
         } else {
             setCurrentStamina(playerStats.stamina);
+            setFreeRestAvailable(false);
         }
     };
 
@@ -695,7 +702,9 @@ export const GameProvider = ({ children }) => {
             updateQuestProgress,
             claimQuestReward,
             donateItem,
-            calculateTownXPForLevel
+            calculateTownXPForLevel,
+            freeRestAvailable,
+            setFreeRestAvailable
         }}>
             {children}
         </GameContext.Provider>

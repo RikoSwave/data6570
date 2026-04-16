@@ -46,6 +46,32 @@ describe('TrainCombatScreen', () => {
         expect(getByText('78 XP to next')).toBeTruthy();
     });
 
+    it('cannot hit combat dummy with 0 stamina', () => {
+        const mockContextValueWithZeroStamina = {
+            xp: 0, level: 1, trainCombat: jest.fn(), xpToNextLevel: 80, levelProgress: 0,
+            playerStats: { stamina: 10, maxHit: 1, accuracy: 1, defence: 1 },
+            currentStamina: 0, healPlayer: jest.fn(), takeDamage: jest.fn(), gainXp: jest.fn(),
+            lootMonsterDrop: jest.fn(), unlockCreature: jest.fn(), unlockedCreatures: [],
+            updateQuestProgress: jest.fn(), inventory: [], consumePotion: jest.fn(),
+            activePotions: [], setFreeRestAvailable: jest.fn(), characterName: "Hero"
+        };
+        const ZeroStaminaWrapper = ({ children }) => {
+            const { GameContext } = require('../../context/GameContext');
+            const React = require('react');
+            return <GameContext.Provider value={mockContextValueWithZeroStamina}>{children}</GameContext.Provider>;
+        };
+
+        const { getByText } = render(<TrainCombatScreen />, { wrapper: ZeroStaminaWrapper });
+        
+        const alertSpy = jest.spyOn(require('react-native').Alert, 'alert');
+        const dummyButton = getByText('HIT COMBAT DUMMY');
+        fireEvent.press(dummyButton);
+
+        expect(alertSpy).toHaveBeenCalledWith("Too weak!", "You need stamina to hit the dummy.");
+        expect(mockContextValueWithZeroStamina.trainCombat).not.toHaveBeenCalled();
+        alertSpy.mockRestore();
+    });
+
     it('can select a target and fight it', () => {
         const { getByText, queryByText } = render(<TrainCombatScreen />, { wrapper });
 
@@ -82,8 +108,8 @@ describe('TrainCombatScreen', () => {
         // Assert new stats are visible
         expect(getByText('Strength')).toBeTruthy();
         expect(getByText('Accuracy')).toBeTruthy();
-        expect(getByText('Defence')).toBeTruthy();
-        expect(getByText('Max HP')).toBeTruthy();
+        expect(getByText('Defense')).toBeTruthy();
+        expect(getByText('HP')).toBeTruthy();
     });
 
 });

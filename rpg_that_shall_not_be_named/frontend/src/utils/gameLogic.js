@@ -206,7 +206,7 @@ export const generateRandomGear = (level) => {
     baseStat = Math.max(1, baseStat);
 
     let stats = { accuracy: 0, maxHit: 0, defence: 0, stamina: 0 };
-    
+
     // Percent chance roll (only for Adamant or higher, which is tier 5+)
     const rollPercent = (tier >= 5) && (Math.random() < 0.33);
 
@@ -296,11 +296,11 @@ export const POTION_TYPES = ['Accuracy', 'Strength', 'Defence', 'Health'];
 export const POTION_TIERS = ['Basic', 'Good', 'Rare', 'Legendary'];
 
 export const DUNGEON_TYPES = {
-    GOBLINS_HIDEOUT: { 
-        name: "Goblin's Hideout", 
-        time: 15, 
-        baseSuccessRate: 75, 
-        plFactor: 2, 
+    GOBLINS_HIDEOUT: {
+        name: "Goblin's Hideout",
+        time: 15,
+        baseSuccessRate: 75,
+        plFactor: 2,
         tlFactor: 4,
         bossName: "Goblin King",
         rewardConfig: {
@@ -316,11 +316,11 @@ export const DUNGEON_TYPES = {
         },
         description: 'A damp cave filled with weak goblins. Low risk, moderate reward.'
     },
-    THIEVES_DEN: { 
-        name: "Thieve's Den", 
-        time: 60, 
-        baseSuccessRate: 40, 
-        plFactor: 1, 
+    THIEVES_DEN: {
+        name: "Thieve's Den",
+        time: 60,
+        baseSuccessRate: 40,
+        plFactor: 1,
         tlFactor: 2,
         bossName: "Queen of Thieves",
         rewardConfig: {
@@ -337,11 +337,11 @@ export const DUNGEON_TYPES = {
         },
         description: 'A hidden cellar of cutthroats. Dangerous but lucrative.'
     },
-    CORRUPT_KING_VAULT: { 
-        name: "Corrupt King's Vault", 
-        time: 150, 
-        baseSuccessRate: 0, 
-        plFactor: 1, 
+    CORRUPT_KING_VAULT: {
+        name: "Corrupt King's Vault",
+        time: 150,
+        baseSuccessRate: 0,
+        plFactor: 1,
         tlFactor: 2,
         bossName: "King's lockbox",
         rewardConfig: {
@@ -358,11 +358,11 @@ export const DUNGEON_TYPES = {
         },
         description: "The King's private treasury. Extremely well guarded."
     },
-    DRAGONS_HOARD: { 
-        name: "Dragon's Hoard", 
-        time: 300, 
-        baseSuccessRate: -50, 
-        plFactor: 1, 
+    DRAGONS_HOARD: {
+        name: "Dragon's Hoard",
+        time: 300,
+        baseSuccessRate: -50,
+        plFactor: 1,
         tlFactor: 2,
         bossName: "Dragon Boss",
         rewardConfig: {
@@ -529,15 +529,15 @@ export const generatePotion = (tierOrDungeon) => {
 
     if (tier === 'Good') {
         multiplier = 1.25;
-        healPercent = 0.50; 
+        healPercent = 0.50;
         value = 25;
     } else if (tier === 'Rare') {
         multiplier = 1.5;
-        healPercent = 0.75; 
+        healPercent = 0.75;
         value = 100;
     } else if (tier === 'Legendary') {
         multiplier = 2.0;
-        healPercent = 1.0; 
+        healPercent = 1.0;
         value = 150;
     }
 
@@ -558,11 +558,12 @@ export const calculateTownXPForLevel = (level) => {
 };
 
 export const TOWN_QUESTS = [
-    { id: 'q1', targetId: 'chicken', count: 5, name: 'Pest Control', description: 'Defeat 5 Chickens', rewardCoins: 50, rewardTownXP: 10 },
-    { id: 'q2', targetId: 'cow', count: 3, name: 'Beef Supply', description: 'Defeat 3 Cows', rewardCoins: 100, rewardTownXP: 25 },
-    { id: 'q3', targetId: 'goblin', count: 3, name: 'Goblin Trouble', description: 'Defeat 3 Small Goblins', rewardCoins: 200, rewardTownXP: 50 },
-    { id: 'q4', targetId: 'chicken', count: 10, name: 'Obsessive Hunter', description: 'Defeat 10 Chickens', rewardCoins: 150, rewardTownXP: 20 },
-    { id: 'q5', targetId: 'cow', count: 10, name: 'Steak Dinner', description: 'Defeat 10 Cows', rewardCoins: 400, rewardTownXP: 60 },
+    { id: 'q1', targetId: 'chicken', count: 5, name: 'Pest Control', description: 'Defeat 5 Chickens', rewardCoins: 10, rewardTownXP: 5 },
+    { id: 'q2', targetId: 'cow', count: 3, name: 'Beef Supply', description: 'Defeat 3 Cows', rewardCoins: 10, rewardTownXP: 10 },
+    { id: 'q3', targetId: 'goblin', count: 3, name: 'Goblin Trouble', description: 'Defeat 3 Small Goblins', rewardCoins: 15, rewardTownXP: 25 },
+    { id: 'q4', targetId: 'chicken', count: 10, name: 'Obsessive Hunter', description: 'Defeat 10 Chickens', rewardCoins: 10, rewardTownXP: 20 },
+    { id: 'q5', targetId: 'cow', count: 10, name: 'Steak Dinner', description: 'Defeat 10 Cows', rewardCoins: 20, rewardTownXP: 10 },
+    { id: 'q6', targetId: 'goblin', count: 10, name: 'Goblin Slayer', description: 'Defeat 10 Small Goblins', rewardCoins: 25, rewardTownXP: 25 },
 ];
 
 export const generateQuest = (townLevel) => {
@@ -608,7 +609,7 @@ export const generateShopItems = (townLevel, shopType) => {
 export const getTownLevelBonuses = (level) => {
     const bonuses = [];
     if (level === 2) {
-        bonuses.push('Unlocks Inn (+10 HP)');
+        bonuses.push('Upgrades Inn (+10 HP)');
         bonuses.push('Expands Shop Stock');
     } else if (level === 3) {
         bonuses.push('Unlocks Good Potions');
@@ -622,5 +623,6 @@ export const getTownLevelBonuses = (level) => {
     } else {
         bonuses.push('More items added to Town Shops');
     }
+    bonuses.push('Slightly increase Dungeon exploration success chance.');
     return bonuses;
 };

@@ -168,7 +168,16 @@ const ExploreDungeonScreen = () => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>DUNGEON</Text>
-                <Text style={styles.subtitle}>HP: {currentStamina}/{playerStats.stamina}  |  Coins: {coins}</Text>
+                <Text style={styles.subtitle}>Inventory: {inventory.length} items  |  Coins: {coins}</Text>
+                {gearStats.speedBonus > 0 && (
+                    <Text style={styles.bonusText}>Speed Bonus: -{gearStats.speedBonus}% Time</Text>
+                )}
+                <View style={styles.statsRow}>
+                    <Text style={styles.statLine}>Strength: {playerStats.maxHit} | </Text>
+                    <Text style={styles.statLine}>Accuracy: {playerStats.accuracy} | </Text>
+                    <Text style={styles.statLine}>Defense: {playerStats.defence} | </Text>
+                    <Text style={styles.statLine}>HP: {currentStamina}/{playerStats.stamina}</Text>
+                </View>
             </View>
 
             {renderDungeonSelector()}
@@ -259,46 +268,191 @@ const ExploreDungeonScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#001a00', padding: 20 },
-    header: { alignItems: 'center', marginBottom: 15 },
-    title: { fontSize: 32, fontWeight: 'bold', color: '#00ff00' },
-    subtitle: { color: '#8f8', fontSize: 16 },
-    selectorContainer: { marginBottom: 15 },
-    selectorTitle: { color: '#aaa', fontSize: 12, textAlign: 'center', marginBottom: 5 },
-    dungeonScroll: { flexDirection: 'row' },
-    dungeonButton: { backgroundColor: '#222', padding: 12, borderRadius: 8, marginRight: 10, borderWidth: 1, borderColor: '#444' },
-    selectedDungeon: { backgroundColor: '#004400', borderColor: '#00ff00' },
-    dungeonBtnText: { color: '#fff', fontSize: 13, fontWeight: 'bold' },
-    mainContent: { flex: 1 },
-    dungeonDescription: { color: '#dfd', fontSize: 14, fontStyle: 'italic', textAlign: 'center', marginVertical: 10 },
-    progressContainer: { alignItems: 'center', marginVertical: 20 },
-    exploringText: { fontSize: 18, color: '#cfc', marginBottom: 10 },
-    timerText: { fontSize: 48, fontWeight: 'bold', color: '#fff' },
-    idleContainer: { alignItems: 'center', marginVertical: 20 },
-    idleText: { color: '#666', fontSize: 16, marginBottom: 15 },
-    exploreButton: { backgroundColor: '#006400', paddingVertical: 15, paddingHorizontal: 30, borderRadius: 10, borderWidth: 2, borderColor: '#00ff00' },
-    buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-    logContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 10, padding: 15, marginTop: 15 },
-    logTitle: { color: '#fff', fontWeight: 'bold', marginBottom: 10 },
-    logEntry: { color: '#afa', marginBottom: 5, fontSize: 13 },
-    resultContainer: { backgroundColor: '#1a1a1a', padding: 20, borderRadius: 10, alignItems: 'center', borderColor: '#ffd700', borderWidth: 1 },
-    resultTitle: { color: '#ffd700', fontSize: 22, fontWeight: 'bold', marginBottom: 10 },
-    lootText: { color: '#fff', fontSize: 18, marginBottom: 5 },
-    choiceButtons: { marginTop: 20, width: '100%' },
-    leaveButton: { backgroundColor: '#444', padding: 15, borderRadius: 5, marginBottom: 10 },
-    bossButton: { backgroundColor: '#b22222', padding: 15, borderRadius: 5 },
-    bossPrepContainer: { backgroundColor: '#200', padding: 20, borderRadius: 10, alignItems: 'center', borderWidth: 1, borderColor: '#f00' },
-    bossTitle: { color: '#f00', fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
-    bossStatsText: { color: '#fff', fontSize: 16, marginBottom: 10 },
-    warningText: { color: '#ff0', fontSize: 12, textAlign: 'center', marginBottom: 15, fontWeight: 'bold' },
-    potionSection: { width: '100%', marginBottom: 15 },
-    sectionTitle: { color: '#fff', fontSize: 14, marginBottom: 5 },
-    potionList: { flexDirection: 'row' },
-    potionButton: { backgroundColor: '#e74c3c', padding: 8, borderRadius: 5, marginRight: 8 },
-    potionText: { color: '#fff', fontSize: 11, fontWeight: 'bold' },
-    bossActions: { width: '100%' },
-    fightButton: { backgroundColor: '#f00', padding: 15, borderRadius: 5, marginBottom: 10 },
-    cancelButton: { backgroundColor: '#333', padding: 15, borderRadius: 5 },
+    container: {
+        flex: 1,
+        backgroundColor: '#001a00', // Dark Green
+        padding: 20,
+    },
+    header: {
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    statsRow: {
+        flexDirection: 'row',
+        marginTop: 5,
+        backgroundColor: '#113311',
+        padding: 5,
+        borderRadius: 5,
+    },
+    statLine: {
+        color: '#dfd',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    // ... existing styles ...
+    selectorContainer: {
+        marginBottom: 10,
+    },
+    selectorTitle: {
+        color: '#aaa',
+        fontSize: 12,
+        marginBottom: 5,
+        textAlign: 'center',
+    },
+    dungeonButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginBottom: 5,
+    },
+    dungeonButton: {
+        backgroundColor: '#222',
+        padding: 10,
+        borderRadius: 5,
+        width: '48%',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#444',
+    },
+    selectedDungeon: {
+        backgroundColor: '#004400',
+        borderColor: '#00ff00',
+    },
+    dungeonBtnText: {
+        color: '#fff',
+        fontSize: 12,
+    },
+    // ...
+    saveLoadContainer: {
+        flexDirection: 'row',
+        width: '100%',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    smallButton: {
+        backgroundColor: '#444',
+        padding: 8,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: '#666',
+    },
+    smallButtonText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
+    title: {
+        fontSize: 36,
+        fontWeight: 'bold',
+        color: '#00ff00',
+        textTransform: 'uppercase',
+    },
+    subtitle: {
+        color: '#8f8',
+        fontSize: 16,
+    },
+    bonusText: {
+        color: '#00ffff',
+        fontSize: 14,
+        fontWeight: 'bold',
+        marginTop: 5,
+    },
+    costText: {
+        color: '#FFD700',
+        fontSize: 16,
+        marginTop: 5,
+        fontWeight: 'bold',
+    },
+    mainContent: {
+        flex: 1,
+        justifyContent: 'flex-start',
+    },
+    dungeonDescription: {
+        color: '#dfd',
+        fontSize: 14,
+        fontStyle: 'italic',
+        textAlign: 'center',
+        marginVertical: 10,
+        paddingHorizontal: 20,
+    },
+    progressContainer: {
+        alignItems: 'center',
+        marginVertical: 10,
+    },
+    exploringText: {
+        fontSize: 18,
+        color: '#cfc',
+        marginBottom: 10,
+        textAlign: 'center',
+    },
+    timerText: {
+        fontSize: 48,
+        fontWeight: 'bold',
+        color: '#fff',
+    },
+    idleContainer: {
+        alignItems: 'center',
+        marginVertical: 20,
+    },
+    idleText: {
+        color: '#666',
+        fontSize: 18,
+    },
+    logContainer: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: 10,
+        padding: 10,
+    },
+    logTitle: {
+        color: '#fff',
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    logEntry: {
+        color: '#afa',
+        marginBottom: 5,
+        fontSize: 14,
+    },
+    exploreButton: {
+        backgroundColor: '#006400',
+        paddingVertical: 15,
+        borderRadius: 10,
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#00ff00',
+        elevation: 5,
+    },
+    disabledButton: {
+        backgroundColor: '#224422',
+        borderColor: '#446644',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 20,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+    },
+    potionContainer: {
+        marginBottom: 15,
+        backgroundColor: '#2c3e50',
+        padding: 10,
+        borderRadius: 5,
+    },
+    potionScroll: {
+        flexDirection: 'row',
+    },
+    potionButton: {
+        backgroundColor: '#e74c3c',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 3,
+        marginRight: 10,
+    },
+    potionText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: 'bold',
+    },
 });
 
 export default ExploreDungeonScreen;
