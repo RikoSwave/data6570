@@ -226,6 +226,11 @@ export const GameProvider = ({ children }) => {
             setActiveQuest(data.activeQuest || null);
             setShopStock((data.shopStock && data.shopStock.blacksmith) ? data.shopStock : { blacksmith: [], potion: [], lastRefreshBlacksmith: 0, lastRefreshPotion: 0 });
             return true;
+        } else if (res.status === 401 || res.status === 403) {
+            // Token is likely invalid or expired
+            await AsyncStorage.removeItem('@auth_token');
+            setAuthToken(null);
+            setCharacterName(null);
         }
         return false;
     };
