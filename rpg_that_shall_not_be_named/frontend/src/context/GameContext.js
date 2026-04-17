@@ -13,7 +13,10 @@ import {
     calculateTownXPForLevel,
     generateShopItems,
     generateQuest,
-    generatePotion
+    generatePotion,
+    DUNGEON_TYPES,
+    rollTier,
+    rollFromWeights
 } from '../utils/gameLogic';
 
 const GameContext = createContext();
@@ -527,7 +530,7 @@ export const GameProvider = ({ children }) => {
         // 2. Roll for Traps (Simulated for the final result)
         // p^2 = 1 - S -> p = sqrt(1-S)
         const sDecimal = Math.max(0, Math.min(100, totalSuccessRate)) / 100;
-        const trapChancePerEncounter = Math.sqrt(1 - sDecimal) * 100;
+        const trapChancePerEncounter = Math.sqrt(Math.max(0, 1 - sDecimal)) * 100;
         
         let trapsHit = 0;
         const results = [];
@@ -537,21 +540,19 @@ export const GameProvider = ({ children }) => {
             trapsHit++;
             const baseDamage = Math.floor(playerStats.stamina * 0.2) + 5;
             const damage = Math.floor(baseDamage * 0.5); // "half of the amount that the player currently takes"
-            takeDamage(damage);
             results.push({ type: 'trap', count: 1, damage });
-            if (currentStamina - damage <= 0) {
-                return { success: false, reason: 'died', trapsHit: 1, results };
-            }
         }
 
         // Encounter 2
         if (Math.random() * 100 < trapChancePerEncounter) {
             trapsHit++;
             const damage = Math.floor(playerStats.stamina * 0.2) + 5;
-            takeDamage(damage);
             results.push({ type: 'trap', count: 2, damage });
-            // Failure!
-            return { success: false, reason: 'trap_fail', trapsHit: 2, results };
+            
+            // Only fail if BOTH traps were hit
+            if (trapsHit === 2) {
+                return { success: false, reason: 'trap_fail', trapsHit: 2, results, dungeonKey };
+            }
         }
 
         // 3. Generate Rewards (Pending)

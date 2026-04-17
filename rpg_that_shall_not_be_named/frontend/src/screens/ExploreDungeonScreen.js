@@ -7,7 +7,8 @@ import { DUNGEON_TYPES, getBossStats } from '../utils/gameLogic';
 const ExploreDungeonScreen = () => {
     const {
         currentStamina, playerStats, exploreDungeon, claimDungeonRewards,
-        inventory, gearStats, coins, payCoins, consumePotion, bossesDefeated, runBossFight
+        inventory, gearStats, coins, consumePotion, bossesDefeated, runBossFight,
+        takeDamage
     } = useGame();
 
     const [isExploring, setIsExploring] = useState(false);
@@ -57,6 +58,12 @@ const ExploreDungeonScreen = () => {
             const trap = pendingResult.results.find(r => r.count === 1);
             if (trap) {
                 setLog(prev => [`Triggered a trap! Took ${trap.damage} damage.`, ...prev]);
+                takeDamage(trap.damage);
+                if (currentStamina - trap.damage <= 0) {
+                    setIsExploring(false);
+                    Alert.alert("Defeated", "You collapsed from your wounds and were rescued by the guards.");
+                    setPendingResult(null);
+                }
             } else {
                 setLog(prev => ["Path seems clear so far...", ...prev]);
             }
@@ -65,11 +72,23 @@ const ExploreDungeonScreen = () => {
         if (timer === t2) {
             const trap = pendingResult.results.find(r => r.count === 2);
             if (trap) {
-                setLog(prev => [`OH NO! A second trap! Exploration failed.`, ...prev]);
-                setIsExploring(false);
-                setTimer(0);
-                Alert.alert("Dungeon Failure", "You hit too many traps and had to retreat, losing all gathered loot.");
-                setPendingResult(null);
+                setLog(prev => [`Triggered a trap! Took ${trap.damage} damage.`, ...prev]);
+                takeDamage(trap.damage);
+
+                if (currentStamina - trap.damage <= 0) {
+                    setIsExploring(false);
+                    Alert.alert("Defeated", "You collapsed from your wounds and were rescued by the guards.");
+                    setPendingResult(null);
+                    return;
+                }
+                
+                if (pendingResult.reason === 'trap_fail') {
+                    setLog(prev => [`OH NO! A second trap! Exploration failed.`, ...prev]);
+                    setIsExploring(false);
+                    setTimer(0);
+                    Alert.alert("Dungeon Failure", "You hit too many traps and had to retreat, losing all gathered loot.");
+                    setPendingResult(null);
+                }
             } else {
                 setLog(prev => ["Almost at the end...", ...prev]);
             }
@@ -95,21 +114,22 @@ const ExploreDungeonScreen = () => {
             return;
         }
 
-        setLog([]);
-        setPendingResult(null);
-        setShowBossPrep(false);
+        try {
+            setLog([]);
+            setPendingResult(null);
+            setShowBossPrep(false);
 
-        const result = await exploreDungeon(selectedDungeonKey);
-        setPendingResult(result);
+            const result = await exploreDungeon(selectedDungeonKey);
+            if (!result) throw new Error("No response from dungeon system");
+            
+            setPendingResult(result);
 
-        if (result.reason === 'died') {
-            setLog(["Died to a trap! Returning to town..."]);
-            Alert.alert("Defeated", "You collapsed in the dungeon and were rescued by the guards.");
-            return;
+            setTimer(maxTime);
+            setIsExploring(true);
+        } catch (error) {
+            console.error("Exploration failed:", error);
+            Alert.alert("Error", "Something went wrong while trying to start the exploration.");
         }
-
-        setTimer(maxTime);
-        setIsExploring(true);
     };
 
     const handleCollectAndLeave = () => {
@@ -124,30 +144,47 @@ const ExploreDungeonScreen = () => {
 
     const startBossFight = () => {
         setIsFightingBoss(true);
+        setLog([]);
+        setLog(prev => ["The battle begins!", ...prev]);
+        
+        // Sequence of logs to show progress
+        setTimeout(() => setLog(prev => [`Encountered ${bossName}!`, ...prev]), 500);
+        setTimeout(() => setLog(prev => ["You trade blows with the guardian...", ...prev]), 1000);
+        setTimeout(() => setLog(prev => ["The struggle is intense!", ...prev]), 2000);
+
         setTimeout(() => {
             const fightResult = runBossFight(pendingResult);
             setIsFightingBoss(false);
             if (fightResult.success) {
                 claimDungeonRewards(pendingResult); // Claim original reward
                 let msg = "BOSS DEFEATED! You earned extra rewards.";
-                if (fightResult.drops.length > 0) {
+                if (fightResult.drops && fightResult.drops.length > 0) {
                     msg += ` Found unique item: ${fightResult.drops[0].name}`;
+                    setLog(prev => [`VICTORY! Found ${fightResult.drops[0].name}`, ...prev]);
+                } else {
+                    setLog(prev => ["VICTORY!", ...prev]);
                 }
                 Alert.alert("Victory", msg);
                 setPendingResult(null);
                 setShowBossPrep(false);
             } else {
+                setLog(prev => ["DEFEATED! The boss was too strong.", ...prev]);
                 Alert.alert("Defeat", "The boss defeated you! You lost all your dungeon loot.");
                 setPendingResult(null);
                 setShowBossPrep(false);
             }
-        }, 1500);
+        }, 3000);
     };
 
     const renderDungeonSelector = () => (
         <View style={styles.selectorContainer}>
             <Text style={styles.selectorTitle}>SELECT DUNGEON:</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dungeonScroll}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.dungeonScroll}
+                contentContainerStyle={styles.dungeonScrollContent}
+            >
                 {Object.keys(DUNGEON_TYPES).filter(k => DUNGEON_TYPES[k].name).map(key => (
                     <TouchableOpacity
                         key={key}
@@ -162,13 +199,13 @@ const ExploreDungeonScreen = () => {
     );
 
     const bossStats = getBossStats(bossesDefeated, pendingResult?.dungeonKey);
-    const bossName = pendingResult?.dungeonKey ? DUNGEON_TYPES[pendingResult.dungeonKey].bossName : "ANCIENT GUARDIAN";
+    const bossName = pendingResult?.dungeonKey ? DUNGEON_TYPES[pendingResult.dungeonKey].bossName : "";
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.title}>DUNGEON</Text>
-                <Text style={styles.subtitle}>Inventory: {inventory.length} items  |  Coins: {coins}</Text>
+                <Text style={styles.subtitle}>Inventory: {inventory.length}/10 items  |  Coins: {coins}</Text>
                 {gearStats.speedBonus > 0 && (
                     <Text style={styles.bonusText}>Speed Bonus: -{gearStats.speedBonus}% Time</Text>
                 )}
@@ -192,7 +229,7 @@ const ExploreDungeonScreen = () => {
                         {healthPotions.length > 0 && (
                             <View style={styles.potionSection}>
                                 <Text style={styles.sectionTitle}>Use Potion before fight:</Text>
-                                <ScrollView horizontal style={styles.potionList}>
+                                <ScrollView horizontal style={styles.potionList} contentContainerStyle={{ paddingVertical: 5 }}>
                                     {healthPotions.map(p => (
                                         <TouchableOpacity key={p.id} style={styles.potionButton} onPress={() => consumePotion(p)}>
                                             <Text style={styles.potionText}>{p.name}</Text>
@@ -203,7 +240,7 @@ const ExploreDungeonScreen = () => {
                         )}
 
                         {isFightingBoss ? (
-                            <ActivityIndicator size="large" color="#ff0000" />
+                            <ActivityIndicator size="large" color="#ff0000" style={{ marginVertical: 20 }} />
                         ) : (
                             <View style={styles.bossActions}>
                                 <TouchableOpacity style={styles.fightButton} onPress={startBossFight}>
@@ -226,12 +263,12 @@ const ExploreDungeonScreen = () => {
                                 <Text style={styles.buttonText}>LEAVE WITH LOOT</Text>
                             </TouchableOpacity>
                             <TouchableOpacity style={styles.bossButton} onPress={handleBossFight}>
-                                <Text style={styles.buttonText}>CHALLENGE BOSS (RISK LOOT)</Text>
+                                <Text style={styles.buttonText}>CHALLENGE BOSS</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 ) : (
-                    <>
+                    <View style={styles.idlePanel}>
                         <Text style={styles.dungeonDescription}>{selectedDungeon.description}</Text>
                         {isExploring ? (
                             <View style={styles.progressContainer}>
@@ -241,7 +278,7 @@ const ExploreDungeonScreen = () => {
                             </View>
                         ) : (
                             <View style={styles.idleContainer}>
-                                <Text style={styles.idleText}>Ready to explore ({maxTime}s).</Text>
+                                <Text style={styles.idleText}>Time to explore: {maxTime}s</Text>
                                 <TouchableOpacity
                                     style={styles.exploreButton}
                                     onPress={handleExplore}
@@ -251,15 +288,16 @@ const ExploreDungeonScreen = () => {
                                 </TouchableOpacity>
                             </View>
                         )}
-                    </>
+                    </View>
                 )}
 
-                <View style={styles.logContainer}>
+                <View style={styles.logWrapper}>
                     <Text style={styles.logTitle}>Exploration Log:</Text>
                     <FlatList
                         data={log}
                         renderItem={({ item }) => <Text style={styles.logEntry}>• {item}</Text>}
                         keyExtractor={(item, index) => index.toString()}
+                        style={styles.logList}
                     />
                 </View>
             </View>
@@ -270,48 +308,71 @@ const ExploreDungeonScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#001a00', // Dark Green
-        padding: 20,
+        backgroundColor: '#001a00',
+        padding: 15,
     },
     header: {
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 15,
+    },
+    title: {
+        fontSize: 32,
+        fontWeight: 'bold',
+        color: '#00ff00',
+        textTransform: 'uppercase',
+    },
+    subtitle: {
+        color: '#8f8',
+        fontSize: 14,
+    },
+    bonusText: {
+        color: '#00ffff',
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginTop: 2,
     },
     statsRow: {
         flexDirection: 'row',
-        marginTop: 5,
+        marginTop: 8,
         backgroundColor: '#113311',
-        padding: 5,
-        borderRadius: 5,
+        padding: 8,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#225522',
     },
     statLine: {
         color: '#dfd',
         fontSize: 12,
         fontWeight: 'bold',
     },
-    // ... existing styles ...
     selectorContainer: {
-        marginBottom: 10,
+        alignItems: 'center',
+        marginBottom: 15,
     },
     selectorTitle: {
-        color: '#aaa',
-        fontSize: 12,
-        marginBottom: 5,
+        color: '#888',
+        fontSize: 11,
+        marginBottom: 8,
         textAlign: 'center',
+        fontWeight: 'bold',
     },
-    dungeonButtons: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 5,
+    dungeonScroll: {
+        height: 45,
+    },
+    dungeonScrollContent: {
+        alignItems: 'center',
+        paddingHorizontal: 5,
     },
     dungeonButton: {
-        backgroundColor: '#222',
-        padding: 10,
-        borderRadius: 5,
-        width: '48%',
-        alignItems: 'center',
+        backgroundColor: '#1a1a1a',
+        paddingHorizontal: 15,
+        paddingVertical: 8,
+        marginHorizontal: 5,
+        borderRadius: 20,
         borderWidth: 1,
-        borderColor: '#444',
+        borderColor: '#333',
+        minWidth: 120,
+        alignItems: 'center',
     },
     selectedDungeon: {
         backgroundColor: '#004400',
@@ -319,138 +380,202 @@ const styles = StyleSheet.create({
     },
     dungeonBtnText: {
         color: '#fff',
-        fontSize: 12,
-    },
-    // ...
-    saveLoadContainer: {
-        flexDirection: 'row',
-        width: '100%',
-        justifyContent: 'space-between',
-        marginBottom: 10,
-    },
-    smallButton: {
-        backgroundColor: '#444',
-        padding: 8,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#666',
-    },
-    smallButtonText: {
-        color: '#fff',
-        fontSize: 12,
-        fontWeight: 'bold',
-    },
-    title: {
-        fontSize: 36,
-        fontWeight: 'bold',
-        color: '#00ff00',
-        textTransform: 'uppercase',
-    },
-    subtitle: {
-        color: '#8f8',
-        fontSize: 16,
-    },
-    bonusText: {
-        color: '#00ffff',
-        fontSize: 14,
-        fontWeight: 'bold',
-        marginTop: 5,
-    },
-    costText: {
-        color: '#FFD700',
-        fontSize: 16,
-        marginTop: 5,
-        fontWeight: 'bold',
+        fontSize: 13,
+        fontWeight: '600',
     },
     mainContent: {
         flex: 1,
-        justifyContent: 'flex-start',
+        justifyContent: 'center',
+    },
+    idlePanel: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+        backgroundColor: '#002200',
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: '#004400',
+        marginBottom: 20,
     },
     dungeonDescription: {
-        color: '#dfd',
+        color: '#ccffcc',
         fontSize: 14,
         fontStyle: 'italic',
         textAlign: 'center',
-        marginVertical: 10,
-        paddingHorizontal: 20,
-    },
-    progressContainer: {
-        alignItems: 'center',
-        marginVertical: 10,
-    },
-    exploringText: {
-        fontSize: 18,
-        color: '#cfc',
-        marginBottom: 10,
-        textAlign: 'center',
-    },
-    timerText: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        color: '#fff',
+        marginBottom: 20,
+        lineHeight: 20,
     },
     idleContainer: {
         alignItems: 'center',
-        marginVertical: 20,
+        width: '100%',
     },
     idleText: {
-        color: '#666',
-        fontSize: 18,
-    },
-    logContainer: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: 10,
-        padding: 10,
-    },
-    logTitle: {
-        color: '#fff',
-        fontWeight: 'bold',
-        marginBottom: 10,
-    },
-    logEntry: {
-        color: '#afa',
-        marginBottom: 5,
-        fontSize: 14,
+        color: '#888',
+        fontSize: 16,
+        marginBottom: 15,
     },
     exploreButton: {
         backgroundColor: '#006400',
         paddingVertical: 15,
-        borderRadius: 10,
+        paddingHorizontal: 30,
+        borderRadius: 30,
         alignItems: 'center',
         borderWidth: 2,
         borderColor: '#00ff00',
-        elevation: 5,
-    },
-    disabledButton: {
-        backgroundColor: '#224422',
-        borderColor: '#446644',
+        width: '80%',
+        shadowColor: "#00ff00",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 10,
+        elevation: 10,
     },
     buttonText: {
         color: 'white',
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: 'bold',
         textTransform: 'uppercase',
+        letterSpacing: 1,
     },
-    potionContainer: {
+    progressContainer: {
+        alignItems: 'center',
+    },
+    exploringText: {
+        fontSize: 16,
+        color: '#00ff00',
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    timerText: {
+        fontSize: 50,
+        fontWeight: 'bold',
+        color: '#fff',
+        marginBottom: 10,
+    },
+    logWrapper: {
+        flex: 0.6,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        borderRadius: 12,
+        padding: 12,
+        borderWidth: 1,
+        borderColor: '#113311',
+    },
+    logTitle: {
+        color: '#00ff00',
+        fontWeight: 'bold',
+        fontSize: 12,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+    },
+    logEntry: {
+        color: '#afa',
+        marginBottom: 4,
+        fontSize: 13,
+    },
+    resultContainer: {
+        alignItems: 'center',
+        backgroundColor: '#003300',
+        padding: 20,
+        borderRadius: 15,
+        borderWidth: 2,
+        borderColor: '#00ff00',
+        marginBottom: 20,
+    },
+    resultTitle: {
+        color: '#00ff00',
+        fontSize: 22,
+        fontWeight: 'bold',
         marginBottom: 15,
-        backgroundColor: '#2c3e50',
-        padding: 10,
-        borderRadius: 5,
     },
-    potionScroll: {
+    lootText: {
+        color: '#fff',
+        fontSize: 18,
+        marginBottom: 5,
+    },
+    choiceButtons: {
+        marginTop: 20,
+        width: '100%',
+    },
+    leaveButton: {
+        backgroundColor: '#444',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    bossButton: {
+        backgroundColor: '#880000',
+        padding: 12,
+        borderRadius: 8,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#ff0000',
+    },
+    bossPrepContainer: {
+        alignItems: 'center',
+        backgroundColor: '#1a0000',
+        padding: 20,
+        borderRadius: 15,
+        borderWidth: 2,
+        borderColor: '#ff0000',
+        marginBottom: 20,
+    },
+    bossTitle: {
+        color: '#ff0000',
+        fontSize: 24,
+        fontWeight: 'bold',
+        marginBottom: 10,
+    },
+    bossStatsText: {
+        color: '#fff',
+        fontSize: 16,
+        marginBottom: 10,
+    },
+    warningText: {
+        color: '#ffa500',
+        fontSize: 12,
+        textAlign: 'center',
+        marginVertical: 10,
+        fontWeight: 'bold',
+    },
+    bossActions: {
+        width: '100%',
+        marginTop: 10,
+    },
+    fightButton: {
+        backgroundColor: '#880000',
+        padding: 15,
+        borderRadius: 8,
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    cancelButton: {
+        backgroundColor: '#444',
+        padding: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    potionSection: {
+        width: '100%',
+        marginVertical: 15,
+    },
+    sectionTitle: {
+        color: '#aaa',
+        fontSize: 12,
+        marginBottom: 5,
+    },
+    potionList: {
         flexDirection: 'row',
     },
     potionButton: {
-        backgroundColor: '#e74c3c',
-        paddingVertical: 5,
-        paddingHorizontal: 10,
-        borderRadius: 3,
-        marginRight: 10,
+        backgroundColor: '#c0392b',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 5,
+        marginRight: 8,
     },
     potionText: {
         color: '#fff',
-        fontSize: 12,
+        fontSize: 11,
         fontWeight: 'bold',
     },
 });

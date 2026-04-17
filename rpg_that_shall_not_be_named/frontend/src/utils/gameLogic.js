@@ -92,22 +92,25 @@ export const CREATURES = [
 
 export const getBossStats = (bossesDefeated, dungeonKey = null) => {
     const baseStats = {
-        hp: 50 + ((bossesDefeated) ^ 2 * 50),
-        defence: 10 + ((bossesDefeated) ^ 2 * 5),
-        maxHit: 5 + ((bossesDefeated) ^ 2 * 2),
-        accuracy: 10 + ((bossesDefeated) ^ 2 * 5)
+        hp: 100 + ((bossesDefeated) ** 2 * 100),
+        defence: 20 + ((bossesDefeated) ** 2 * 10),
+        maxHit: 8 + ((bossesDefeated) ** 2 * 4),
+        accuracy: 15 + ((bossesDefeated) ** 2 * 10)
     };
 
-    // Scaling by dungeon?
-    if (dungeonKey === 'THIEVES_DEN') {
-        baseStats.hp *= 1.5;
+    // Scaling by dungeon
+    if (dungeonKey === 'GOBLINS_HIDEOUT') {
+        baseStats.hp *= 1.2;
         baseStats.maxHit += 2;
-    } else if (dungeonKey === 'CORRUPT_KING_VAULT') {
-        baseStats.hp *= 2.5;
+    } else if (dungeonKey === 'THIEVES_DEN') {
+        baseStats.hp *= 2.0;
         baseStats.maxHit += 5;
+    } else if (dungeonKey === 'CORRUPT_KING_VAULT') {
+        baseStats.hp *= 4.0;
+        baseStats.maxHit += 12;
     } else if (dungeonKey === 'DRAGONS_HOARD') {
-        baseStats.hp *= 5;
-        baseStats.maxHit += 15;
+        baseStats.hp *= 12.0;
+        baseStats.maxHit += 30;
     }
 
     return baseStats;
